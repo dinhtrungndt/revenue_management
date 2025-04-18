@@ -2,7 +2,7 @@
 function App() {
   return (
     <div className="App">
-      <h1>My First React App</h1>
+      <h1>Web</h1>
     </div>
   );
 }
