@@ -5,11 +5,11 @@ import { AuthProvider } from './contexts/AuthContext';
 // Pages
 import Login from './pages/user/Login/index.js';
 import Register from './pages/user/Register/index.js';
-import { HomePage } from './pages/home';
+import  HomePage  from './pages/home';
 import Unauthorized from './pages/user/Unauthorized/index.js';
-import { ProductDetailPage } from './pages/products/detail/index.js';
-import {ProductsPage} from './pages/products/index.js';
-import {OrderHistoryPage} from './pages/history/index.js';
+import ProductDetailPage from './pages/products/detail/index.js';
+import ProductsPage from './pages/products/index.js';
+import OrderHistoryPage from './pages/history/index.js';
 import AccountPage from  './pages/account/index.js';
 import ContactPage from './pages/contact/index.js';
 

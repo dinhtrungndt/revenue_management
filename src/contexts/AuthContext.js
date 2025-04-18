@@ -1,5 +1,11 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import { getCurrentUser, logout, setupAxiosInterceptors } from '../services/authService';
+import {
+  getCurrentUser,
+  logout as authLogout,
+  setupAxiosInterceptors,
+  getUserProfile,
+  isTokenValid
+} from '../services/authService';
 
 // Tạo Context
 const AuthContext = createContext();
@@ -8,20 +14,40 @@ const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     // Setup Axios interceptors
     setupAxiosInterceptors();
 
-    // Khôi phục user từ localStorage
+    // Khôi phục user từ localStorage và kiểm tra token
     const initAuth = async () => {
       try {
-        const user = getCurrentUser();
-        if (user) {
-          setUser(user);
+        // Kiểm tra token còn hạn hay không
+        if (isTokenValid()) {
+          // Lấy user từ localStorage trước
+          const localUser = getCurrentUser();
+          if (localUser) {
+            setUser(localUser);
+
+            // Cập nhật thông tin mới nhất từ API
+            try {
+              const currentUser = await getUserProfile();
+              setUser(prev => ({ ...prev, ...currentUser }));
+            } catch (profileError) {
+              console.error('Error fetching user profile:', profileError);
+              // Không set lỗi ở đây để tránh làm gián đoạn trải nghiệm người dùng
+              // Vẫn giữ thông tin user cũ từ localStorage
+            }
+          }
+        } else {
+          // Token không hợp lệ hoặc hết hạn, đăng xuất
+          handleLogout();
         }
       } catch (error) {
-        console.error('Lỗi khôi phục thông tin người dùng:', error);
+        console.error('Error initializing auth:', error);
+        setError('Lỗi xác thực, vui lòng đăng nhập lại');
+        handleLogout();
       } finally {
         setLoading(false);
       }
@@ -30,15 +56,17 @@ export const AuthProvider = ({ children }) => {
     initAuth();
   }, []);
 
-  // Đăng nhập
+  // Đăng nhập - được gọi sau khi API login/register thành công
   const login = (userData) => {
     setUser(userData);
+    setError(null);
   };
 
   // Đăng xuất
   const handleLogout = () => {
-    logout();
+    authLogout();
     setUser(null);
+    setError(null);
   };
 
   // Kiểm tra user có quyền không
@@ -48,18 +76,29 @@ export const AuthProvider = ({ children }) => {
     return roles.includes(user.role);
   };
 
+  // Cập nhật thông tin user
+  const updateUser = (userData) => {
+    setUser(prev => ({ ...prev, ...userData }));
+  };
+
   const authContextValue = {
     user,
     loading,
+    error,
     isAuthenticated: !!user,
     login,
     logout: handleLogout,
-    hasRole
+    hasRole,
+    updateUser
   };
 
   return (
     <AuthContext.Provider value={authContextValue}>
-      {!loading && children}
+      {!loading ? children : (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        </div>
+      )}
     </AuthContext.Provider>
   );
 };

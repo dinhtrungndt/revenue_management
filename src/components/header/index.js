@@ -1,17 +1,24 @@
+// src/components/header/index.js
+
 import React, { useState } from 'react';
-import { FaBars, FaUser, FaSearch, FaTimes } from 'react-icons/fa';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { FaBars, FaUser, FaSearch, FaTimes, FaSignOutAlt, FaShoppingBag, FaClipboardList, FaCog, FaChartLine } from 'react-icons/fa';
+import { useAuth } from '../../contexts/AuthContext';
 import { SideBar } from '../sidebar';
-import { useNavigate, useLocation } from 'react-router-dom';
 
 export const HeaderPage = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchActive, setIsSearchActive] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, isAuthenticated, logout, hasRole } = useAuth();
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
+    if (isProfileDropdownOpen) setIsProfileDropdownOpen(false);
   };
 
   const toggleSearch = () => {
@@ -19,6 +26,11 @@ export const HeaderPage = () => {
     if (isSearchActive) {
       setSearchQuery('');
     }
+  };
+
+  const toggleProfileDropdown = () => {
+    setIsProfileDropdownOpen(!isProfileDropdownOpen);
+    if (isMenuOpen) setIsMenuOpen(false);
   };
 
   const handleSearch = (e) => {
@@ -29,56 +41,140 @@ export const HeaderPage = () => {
     }
   };
 
-  // Determine current page title
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  // Xác định tiêu đề trang dựa vào đường dẫn hiện tại
   const getPageTitle = () => {
-    switch(location.pathname) {
-      case '/':
-        return 'Trang Chủ';
-      case '/products':
-        return 'Sản Phẩm';
-      case '/cart':
-        return 'Giỏ Hàng';
-      case '/account':
-        return 'Tài Khoản';
-      case '/contact':
-        return 'Liên Hệ';
-      default:
-        if (location.pathname.startsWith('/product/')) {
-          return 'Chi Tiết Sản Phẩm';
-        }
-        return 'Trang Chủ';
+    const path = location.pathname;
+
+    if (path === '/') return 'Trang Chủ';
+    if (path === '/products') return 'Sản Phẩm';
+    if (path.startsWith('/product/')) return 'Chi Tiết Sản Phẩm';
+    if (path === '/order-history') return 'Lịch Sử Đơn Hàng';
+    if (path === '/account') return 'Tài Khoản';
+    if (path === '/contact') return 'Liên Hệ';
+
+    // Admin routes
+    if (path.startsWith('/admin')) {
+      if (path === '/admin') return 'Quản Trị';
+      if (path === '/admin/inventory') return 'Quản Lý Kho';
+      if (path === '/admin/export') return 'Báo Cáo Xuất Kho';
+      if (path === '/admin/revenue') return 'Báo Cáo Doanh Thu';
     }
+
+    // Staff routes
+    if (path.startsWith('/staff')) {
+      return 'Quản Lý Kho';
+    }
+
+    return 'Trang Chủ';
   };
 
   return (
     <div className="relative">
       {/* Header */}
       {!isSearchActive ? (
-        <div className="flex items-center justify-between px-4 py-3 bg-gray-100 shadow-md">
+        <div className="flex items-center justify-between px-4 py-3 bg-white shadow-md">
           <div className="text-xl text-gray-700 cursor-pointer" onClick={toggleMenu}>
             <FaBars />
           </div>
           <div className="text-lg font-bold text-gray-800">
             {getPageTitle()}
           </div>
-          <div className="flex items-center">
-            <div
-              className="text-xl text-gray-700 cursor-pointer mr-4"
-              onClick={toggleSearch}
-            >
+          <div className="flex items-center space-x-4">
+            <div className="text-xl text-gray-700 cursor-pointer" onClick={toggleSearch}>
               <FaSearch />
             </div>
-            <div
-              className="text-xl text-gray-700 cursor-pointer"
-              onClick={() => navigate('/account')}
-            >
-              <FaUser />
+            <div className="relative">
+              <div
+                className="text-xl text-gray-700 cursor-pointer"
+                onClick={toggleProfileDropdown}
+              >
+                <FaUser />
+              </div>
+
+              {/* Profile Dropdown */}
+              {isProfileDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 ring-1 ring-black ring-opacity-5">
+                  {isAuthenticated ? (
+                    <>
+                      <div className="px-4 py-2 text-sm text-gray-700 border-b">
+                        <div className="font-medium">{user?.name || 'Người dùng'}</div>
+                        <div className="text-xs text-gray-500">{user?.email}</div>
+                      </div>
+                      <Link
+                        to="/account"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setIsProfileDropdownOpen(false)}
+                      >
+                        <FaUser className="inline mr-2" />
+                        Tài khoản
+                      </Link>
+                      <Link
+                        to="/order-history"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setIsProfileDropdownOpen(false)}
+                      >
+                        <FaClipboardList className="inline mr-2" />
+                        Lịch sử đơn hàng
+                      </Link>
+                      {hasRole('admin') && (
+                        <Link
+                          to="/admin"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          onClick={() => setIsProfileDropdownOpen(false)}
+                        >
+                          <FaChartLine className="inline mr-2" />
+                          Trang quản trị
+                        </Link>
+                      )}
+                      {hasRole(['admin', 'staff']) && !hasRole('admin') && (
+                        <Link
+                          to="/staff"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          onClick={() => setIsProfileDropdownOpen(false)}
+                        >
+                          <FaShoppingBag className="inline mr-2" />
+                          Trang nhân viên
+                        </Link>
+                      )}
+                      <button
+                        className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                        onClick={handleLogout}
+                      >
+                        <FaSignOutAlt className="inline mr-2" />
+                        Đăng xuất
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <Link
+                        to="/login"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setIsProfileDropdownOpen(false)}
+                      >
+                        Đăng nhập
+                      </Link>
+                      <Link
+                        to="/register"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setIsProfileDropdownOpen(false)}
+                      >
+                        Đăng ký
+                      </Link>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
       ) : (
         // Search Active Header
-        <div className="bg-gray-100 shadow-md px-4 py-2">
+        <div className="bg-white shadow-md px-4 py-2">
           <form onSubmit={handleSearch} className="flex items-center">
             <input
               type="text"

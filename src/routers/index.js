@@ -1,9 +1,9 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { HomePage } from '../pages/home';
-import { ProductsPage } from '../pages/products';
-import { ProductDetailPage } from '../pages/products/detail';
-import { OrderHistoryPage } from '../pages/history';
+import HomePage  from '../pages/home';
+import ProductsPage from '../pages/products';
+import ProductDetailPage from '../pages/products/detail';
+import OrderHistoryPage  from '../pages/history';
 // import { CartPage } from './pages/cart';
 // import { AccountPage } from './pages/account';
 // import { ContactPage } from './pages/contact';
