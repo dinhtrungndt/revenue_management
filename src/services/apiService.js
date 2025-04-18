@@ -6,7 +6,6 @@ export const ProductService = {
   getProducts: async (params = {}) => {
     try {
       const response = await apiClient.get('/api/products', { params });
-      console.log('Response:', response.data); // Log the response data
       return response.data;
     } catch (error) {
       console.error('Error fetching products:', error);
