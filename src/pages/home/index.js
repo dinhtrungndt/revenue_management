@@ -27,8 +27,6 @@ export const HomePage = () => {
 
   return (
     <div>
-      {/* header */}
-      <HeaderPage />
       {/* main */}
       <div className="p-4 pb-16">
         {/* Banner */}
