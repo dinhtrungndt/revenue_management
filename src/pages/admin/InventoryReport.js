@@ -26,7 +26,7 @@ const InventoryReport = () => {
         setLoading(true);
         setError(null);
 
-        const API_URL = 'http://localhost:8080/api';
+        const API_URL = process.env.REACT_APP_API_URL;
         const response = await axios.get(`${API_URL}/reports/inventory`, {
           params: {
             category: filterCategory !== 'all' ? filterCategory : undefined

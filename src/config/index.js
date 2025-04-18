@@ -1,6 +1,6 @@
 const API_CONFIG = {
     // API base URL - lấy từ biến môi trường hoặc sử dụng giá trị mặc định
-    BASE_URL: process.env.REACT_APP_API_URL || 'http://192.168.1.26:8080/api',
+    BASE_URL: process.env.REACT_APP_API_URL,
     // Timeout request (ms)
     TIMEOUT: 30000,
     // Headers mặc định

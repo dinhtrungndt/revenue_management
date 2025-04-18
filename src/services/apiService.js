@@ -5,7 +5,8 @@ export const ProductService = {
   // Lấy danh sách sản phẩm
   getProducts: async (params = {}) => {
     try {
-      const response = await apiClient.get('/products', { params });
+      const response = await apiClient.get('/api/products', { params });
+      console.log('Response:', response.data); // Log the response data
       return response.data;
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -16,7 +17,7 @@ export const ProductService = {
   // Lấy chi tiết sản phẩm
   getProductById: async (id) => {
     try {
-      const response = await apiClient.get(`/products/${id}`);
+      const response = await apiClient.get(`/api/products/${id}`);
       return response.data;
     } catch (error) {
       console.error(`Error fetching product ${id}:`, error);
@@ -27,7 +28,7 @@ export const ProductService = {
   // Thêm sản phẩm mới (Admin only)
   createProduct: async (productData) => {
     try {
-      const response = await apiClient.post('/products', productData);
+      const response = await apiClient.post('/api/products', productData);
       return response.data;
     } catch (error) {
       console.error('Error creating product:', error);
@@ -38,7 +39,7 @@ export const ProductService = {
   // Cập nhật sản phẩm (Admin only)
   updateProduct: async (id, productData) => {
     try {
-      const response = await apiClient.put(`/products/${id}`, productData);
+      const response = await apiClient.put(`/api/products/${id}`, productData);
       return response.data;
     } catch (error) {
       console.error(`Error updating product ${id}:`, error);
@@ -49,7 +50,7 @@ export const ProductService = {
   // Xóa sản phẩm (Admin only)
   deleteProduct: async (id) => {
     try {
-      const response = await apiClient.delete(`/products/${id}`);
+      const response = await apiClient.delete(`/api/products/${id}`);
       return response.data;
     } catch (error) {
       console.error(`Error deleting product ${id}:`, error);
@@ -63,7 +64,7 @@ export const OrderService = {
   // Tạo đơn hàng mới
   createOrder: async (orderData) => {
     try {
-      const response = await apiClient.post('/orders', orderData);
+      const response = await apiClient.post('/api/orders', orderData);
       return response.data;
     } catch (error) {
       console.error('Error creating order:', error);
@@ -74,7 +75,7 @@ export const OrderService = {
   // Lấy danh sách đơn hàng cá nhân
   getUserOrders: async () => {
     try {
-      const response = await apiClient.get('/orders/me');
+      const response = await apiClient.get('/api/orders/me');
       return response.data;
     } catch (error) {
       console.error('Error fetching user orders:', error);
@@ -85,7 +86,7 @@ export const OrderService = {
   // Lấy chi tiết đơn hàng
   getOrderById: async (id) => {
     try {
-      const response = await apiClient.get(`/orders/${id}`);
+      const response = await apiClient.get(`/api/orders/${id}`);
       return response.data;
     } catch (error) {
       console.error(`Error fetching order ${id}:`, error);
@@ -96,7 +97,7 @@ export const OrderService = {
   // Lấy tất cả đơn hàng (Admin/Staff only)
   getAllOrders: async (params = {}) => {
     try {
-      const response = await apiClient.get('/orders', { params });
+      const response = await apiClient.get('/api/orders', { params });
       return response.data;
     } catch (error) {
       console.error('Error fetching all orders:', error);
@@ -107,7 +108,7 @@ export const OrderService = {
   // Cập nhật trạng thái đơn hàng (Admin/Staff only)
   updateOrderStatus: async (id, status) => {
     try {
-      const response = await apiClient.put(`/orders/${id}/status`, { status });
+      const response = await apiClient.put(`/api/orders/${id}/status`, { status });
       return response.data;
     } catch (error) {
       console.error(`Error updating order ${id} status:`, error);
@@ -121,7 +122,7 @@ export const ReportService = {
   // Báo cáo tổng quan Dashboard (Admin only)
   getDashboardReport: async () => {
     try {
-      const response = await apiClient.get('/reports/dashboard');
+      const response = await apiClient.get('/api/reports/dashboard');
       return response.data;
     } catch (error) {
       console.error('Error fetching dashboard report:', error);
@@ -132,7 +133,7 @@ export const ReportService = {
   // Báo cáo tồn kho (Admin/Staff)
   getInventoryReport: async (params = {}) => {
     try {
-      const response = await apiClient.get('/reports/inventory', { params });
+      const response = await apiClient.get('/api/reports/inventory', { params });
       return response.data;
     } catch (error) {
       console.error('Error fetching inventory report:', error);
@@ -143,7 +144,7 @@ export const ReportService = {
   // Báo cáo xuất kho (Admin only)
   getExportReport: async (params = {}) => {
     try {
-      const response = await apiClient.get('/reports/export', { params });
+      const response = await apiClient.get('/api/reports/export', { params });
       return response.data;
     } catch (error) {
       console.error('Error fetching export report:', error);
@@ -154,7 +155,7 @@ export const ReportService = {
   // Báo cáo doanh thu (Admin only)
   getRevenueReport: async (params = {}) => {
     try {
-      const response = await apiClient.get('/reports/revenue', { params });
+      const response = await apiClient.get('/api/reports/revenue', { params });
       return response.data;
     } catch (error) {
       console.error('Error fetching revenue report:', error);
@@ -168,7 +169,7 @@ export const InventoryService = {
   // Nhập kho (Admin only)
   importStock: async (importData) => {
     try {
-      const response = await apiClient.post('/inventory/import', importData);
+      const response = await apiClient.post('/api/inventory/import', importData);
       return response.data;
     } catch (error) {
       console.error('Error importing stock:', error);
@@ -179,7 +180,7 @@ export const InventoryService = {
   // Điều chỉnh tồn kho (Admin only)
   adjustStock: async (adjustData) => {
     try {
-      const response = await apiClient.post('/inventory/adjust', adjustData);
+      const response = await apiClient.post('/api/inventory/adjust', adjustData);
       return response.data;
     } catch (error) {
       console.error('Error adjusting stock:', error);
@@ -190,7 +191,7 @@ export const InventoryService = {
   // Lấy lịch sử giao dịch kho (Admin only)
   getInventoryTransactions: async (params = {}) => {
     try {
-      const response = await apiClient.get('/inventory/transactions', { params });
+      const response = await apiClient.get('/api/inventory/transactions', { params });
       return response.data;
     } catch (error) {
       console.error('Error fetching inventory transactions:', error);

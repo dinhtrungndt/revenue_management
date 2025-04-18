@@ -11,7 +11,7 @@ const api = axios.create({
 // Đăng ký tài khoản
 export const register = async (userData) => {
   try {
-    const response = await api.post('/auth/register', userData);
+    const response = await api.post('/api/auth/register', userData);
 
     if (response.data && response.data.token) {
       // Lưu token và user vào localStorage
@@ -28,7 +28,7 @@ export const register = async (userData) => {
 // Đăng nhập
 export const login = async (email, password) => {
   try {
-    const response = await api.post('/auth/login', { email, password });
+    const response = await api.post('/api/auth/login', { email, password });
 
     if (response.data && response.data.token) {
       // Lưu token và user vào localStorage
@@ -82,7 +82,7 @@ export const getUserProfile = async () => {
       throw new Error('Không tìm thấy token xác thực');
     }
 
-    const response = await api.get('/auth/me', {
+    const response = await api.get('/api/auth/me', {
       headers: {
         'Authorization': `Bearer ${token}`
       }

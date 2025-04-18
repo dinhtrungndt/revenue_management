@@ -28,7 +28,7 @@ const RevenueReport = () => {
       setLoading(true);
       setError(null);
 
-      const API_URL = 'http://localhost:8080/api';
+      const API_URL = process.env.REACT_APP_API_URL;
 
       // Build query params
       const params = {};

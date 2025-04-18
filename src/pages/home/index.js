@@ -19,7 +19,12 @@ const HomePage = () => {
       try {
         setLoading(true);
         const products = await ProductService.getProducts({ featured: true });
-        setFeaturedProducts(products.slice(0, 4)); // Lấy tối đa 4 sản phẩm
+        if (Array.isArray(products)) {
+          setFeaturedProducts(products.slice(0, 4)); // Lấy tối đa 4 sản phẩm
+        } else {
+          console.error('Invalid API response: products is not an array', products);
+          setError('Dữ liệu sản phẩm không hợp lệ');
+        }
         setLoading(false);
       } catch (err) {
         console.error('Error fetching featured products:', err);
