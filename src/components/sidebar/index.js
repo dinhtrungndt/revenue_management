@@ -93,7 +93,7 @@ export const SideBar = ({ toggleMenu, currentPath }) => {
                                 Lịch Sử Đơn Hàng
                             </li>
                         )}
-                        {isAuthenticated && (
+                        {/* {isAuthenticated && (
                             <li
                                 className={`py-3 border-b border-gray-200 hover:text-blue-600 cursor-pointer flex items-center ${isActive('/account') ? 'text-blue-600 font-medium' : ''}`}
                                 onClick={() => handleNavigation('/account')}
@@ -108,7 +108,7 @@ export const SideBar = ({ toggleMenu, currentPath }) => {
                         >
                             <FaPhone className="mr-3" />
                             Liên Hệ
-                        </li>
+                        </li> */}
 
                         {/* Admin & Staff Links */}
                         {isAuthenticated && hasRole('admin') && (

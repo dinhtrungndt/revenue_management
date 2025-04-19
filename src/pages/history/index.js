@@ -1,6 +1,6 @@
-import React, {useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FaExclamationTriangle, FaMoneyBill, FaCreditCard, FaSync } from 'react-icons/fa';
+import { FaExclamationTriangle, FaMoneyBill, FaCreditCard, FaSync, FaPaw } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContext';
 import { fetchUserOrders } from '../../stores/redux/actions/adminActions.js';
 import { useDispatch, useSelector } from 'react-redux';
@@ -10,7 +10,6 @@ const OrderHistoryPage = () => {
   const { isAuthenticated } = useAuth();
   const { orders, loading, error } = useSelector((state) => state.adminReducer);
 
-  // Fetch user orders
   useEffect(() => {
     const fetchOrders = async () => {
       try {
@@ -25,19 +24,16 @@ const OrderHistoryPage = () => {
     }
   }, [dispatch, isAuthenticated]);
 
-  // Hàm làm mới danh sách đơn hàng
   const handleRefresh = () => {
     if (isAuthenticated) {
       dispatch(fetchUserOrders());
     }
   };
 
-  // Format price as VND
   const formatPrice = (price) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
   };
 
-  // Format date and time
   const formatDate = (dateString) => {
     const options = {
       year: 'numeric',
@@ -49,7 +45,6 @@ const OrderHistoryPage = () => {
     return new Date(dateString).toLocaleDateString('vi-VN', options);
   };
 
-  // Get payment method icon and label
   const getPaymentMethodInfo = (paymentMethod) => {
     switch (paymentMethod) {
       case 'cash':
@@ -179,43 +174,55 @@ const OrderHistoryPage = () => {
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
         {orders.map((order) => {
           const paymentInfo = getPaymentMethodInfo(order.paymentMethod);
+          const isSpaOrder = order.spaDetails && order.spaDetails.note;
 
           return (
             <div
               key={order._id}
               className="bg-white shadow-lg rounded-xl overflow-hidden flex flex-col transition-transform duration-300 hover:scale-105 hover:shadow-xl border border-gray-100"
             >
-              {/* Order header */}
               <div className="px-3 py-3 border-b border-gray-200 bg-gray-50">
                 <h3 className="text-sm font-semibold text-gray-900">
-                  Đơn hàng #{order._id.substring(order._id.length - 8)}
+                  {isSpaOrder ? 'Dịch vụ Spa' : 'Đơn hàng'} #{order._id.substring(order._id.length - 8)}
                 </h3>
                 <p className="text-xs text-gray-500 mt-1">
                   Đặt lúc: {formatDate(order.createdAt)}
                 </p>
+                {isSpaOrder && order.spaDetails.appointmentTime && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Lịch hẹn: {formatDate(order.spaDetails.appointmentTime)}
+                  </p>
+                )}
                 <div className="mt-2 flex flex-wrap gap-2">
                   <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${paymentInfo.className}`}>
                     {paymentInfo.icon}
                     <span className="ml-1">{paymentInfo.label}</span>
                   </span>
+                  {isSpaOrder && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
+                      <FaPaw className="mr-1" />
+                      Spa
+                    </span>
+                  )}
                 </div>
               </div>
 
-              {/* Order items */}
               <ul className="divide-y divide-gray-200 flex-1 p-3">
                 {order.products.map((item, index) => (
                   <li key={index} className="py-2">
                     <div className="flex items-start">
-                      <div className="flex-shrink-0 h-10 w-10 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
-                        {/* Nếu có hình ảnh thật thì sử dụng, nếu không thì để placeholder */}
-                        {item.image ? (
-                          <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
-                        ) : (
-                          <span className="text-gray-500 text-xs">Hình ảnh</span>
-                        )}
-                      </div>
+                      <img
+                        src={item?.product?.image || `https://ui-avatars.com/api/?background=EBF4FF&color=4F46E5&bold=true&name=${encodeURIComponent(item.name)}`}
+                        alt={item.name}
+                        className="h-16 w-16 object-cover rounded-md"
+                      />
                       <div className="ml-2 flex-1">
                         <div className="text-sm font-medium text-gray-900 truncate">{item.name}</div>
+                        {item.spaNote && (
+                          <div className="mt-1 text-xs text-gray-500">
+                            Ghi chú: {item.spaNote}
+                          </div>
+                        )}
                         <div className="mt-1 text-xs text-gray-500">
                           SL: {item.quantity} x {formatPrice(item.price)}
                         </div>
@@ -228,11 +235,10 @@ const OrderHistoryPage = () => {
                 ))}
               </ul>
 
-              {/* Order footer */}
               <div className="px-3 py-3 bg-gray-50 border-t border-gray-200">
                 <div className="flex flex-col text-sm">
                   <p className="text-gray-600 text-xs">
-                    Tổng sản phẩm: {order.products.reduce((total, item) => total + item.quantity, 0)}
+                    Tổng sản phẩm/dịch vụ: {order.products.reduce((total, item) => total + item.quantity, 0)}
                   </p>
                   <p className="text-gray-900 font-bold text-sm mt-1">
                     Tổng tiền: <span className="text-red-600">{formatPrice(order.totalAmount)}</span>

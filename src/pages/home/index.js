@@ -12,7 +12,7 @@ const HomePage = () => {
   ]);
   const navigate = useNavigate();
 
-  const { products, loading, error} = useSelector((state) => state.adminReducer);
+  const { products, loading, error } = useSelector((state) => state.adminReducer);
 
   useEffect(() => {
     dispatch(fetchProducts());
@@ -147,35 +147,60 @@ const HomePage = () => {
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
           </div>
         ) : error ? (
-          <div className="text-center text-red-500">{error}</div>
+          <div className="bg-red-50 border-l-4 border-red-500 p-3 rounded-r text-center">
+            <div className="flex justify-center">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-2">
+                <p className="text-sm text-red-700">{error}</p>
+              </div>
+            </div>
+          </div>
         ) : products.length === 0 ? (
-          <div className="text-center text-gray-500">Không có sản phẩm nổi bật nào</div>
+          <div className="text-center py-8 bg-white rounded-lg shadow-sm">
+            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <h3 className="mt-2 text-base font-medium text-gray-900">Không có sản phẩm nổi bật</h3>
+            <p className="mt-1 text-sm text-gray-500">Hiện tại không có sản phẩm nào để hiển thị.</p>
+          </div>
         ) : (
-          <div className="grid grid-cols-1 gap-y-10 gap-x-6 sm:grid-cols-2 lg:grid-cols-4">
-            {products.map((product) => (
+          <div className="grid grid-cols-2 gap-6">
+            {products.slice(0, 4).map((product) => (
               <div
                 key={product._id}
-                className="group relative bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-lg transition-shadow duration-300"
+                className="cursor-pointer group"
+                onClick={() => navigate(`/products/${product._id}`)}
               >
-                <div className="aspect-w-3 aspect-h-2 overflow-hidden bg-gray-200 group-hover:opacity-90">
-                  <div className="h-48 flex items-center justify-center text-gray-500">
-                    Hình ảnh sản phẩm
+                <div className="relative bg-white rounded-lg shadow-sm overflow-hidden group-hover:shadow-md transition-shadow duration-300">
+                  <div className="aspect-w-1 aspect-h-1 bg-gray-200 overflow-hidden">
+                    <img
+                      src={
+                        product?.image ||
+                        `https://ui-avatars.com/api/?background=EBF4FF&color=4F46E5&bold=true&name=${encodeURIComponent(product.name)}`
+                      }
+                      alt={product?.name || 'Product Image'}
+                      className="object-cover w-full h-40 group-hover:scale-105 transition-transform duration-300"
+                    />
+                    {product.stock === 0 && (
+                      <div className="absolute top-0 right-0 bg-red-500 text-white text-xs font-bold px-1 py-0.5">
+                        Hết
+                      </div>
+                    )}
+                    {product.stock > 0 && product.stock < 10 && (
+                      <div className="absolute top-0 right-0 bg-yellow-500 text-white text-xs font-bold px-1 py-0.5">
+                        Sắp hết
+                      </div>
+                    )}
                   </div>
-                </div>
-                <div className="p-4">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="text-lg font-medium text-gray-900">
-                        <Link to={`/product/${product._id}`}>
-                          <span aria-hidden="true" className="absolute inset-0" />
-                          {product.name}
-                        </Link>
-                      </h3>
-                      <p className="mt-1 text-sm text-gray-500">
-                        {product.category === 'dog' ? 'Thức ăn cho chó' : 'Thức ăn cho mèo'}
-                      </p>
-                    </div>
-                    <p className="text-lg font-medium text-red-600">{formatPrice(product.price)}</p>
+                  <div className="p-4">
+                    <h3 className="text-sm font-medium text-gray-900 group-hover:text-blue-600 truncate">
+                      {product.name}
+                    </h3>
+                    <p className="mt-0.5 text-sm text-red-600 font-bold">{formatPrice(product.price)}</p>
                   </div>
                 </div>
               </div>

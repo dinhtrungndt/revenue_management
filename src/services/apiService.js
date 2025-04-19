@@ -71,6 +71,16 @@ export const OrderService = {
     }
   },
 
+  createSpaOrder: async (orderData) => {
+    try {
+      const response = await apiClient.post('/api/orders/spa', orderData);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating spa order:', error);
+      throw error.response?.data || { message: 'Lỗi khi tạo đơn hàng spa' };
+    }
+  },
+
   // Lấy danh sách đơn hàng cá nhân
   getUserOrders: async () => {
     try {
