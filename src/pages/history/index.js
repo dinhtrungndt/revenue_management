@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FaShoppingBag, FaBoxOpen, FaTruck, FaCheck, FaTimes, FaExclamationTriangle } from 'react-icons/fa';
+import { FaShoppingBag, FaBoxOpen, FaTruck, FaCheck, FaTimes, FaExclamationTriangle, FaMoneyBill, FaCreditCard, FaSync } from 'react-icons/fa';
 import { OrderService } from '../../services/apiService';
 import { useAuth } from '../../contexts/AuthContext';
 import { APP_CONFIG } from '../../config';
@@ -11,23 +11,25 @@ const OrderHistoryPage = () => {
   const [error, setError] = useState(null);
   const { isAuthenticated } = useAuth();
 
+  // Tách hàm fetchOrders ra ngoài để có thể gọi lại
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const data = await OrderService.getUserOrders();
+      console.log('Fetched orders:', data); // Log để debug
+      setOrders(data);
+    } catch (err) {
+      console.error('Error fetching orders:', err);
+      setError('Không thể tải lịch sử đơn hàng. Vui lòng thử lại sau.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Fetch user orders
   useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const data = await OrderService.getUserOrders();
-        setOrders(data);
-      } catch (err) {
-        console.error('Error fetching orders:', err);
-        setError('Không thể tải lịch sử đơn hàng. Vui lòng thử lại sau.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     if (isAuthenticated) {
       fetchOrders();
     } else {
@@ -35,14 +37,26 @@ const OrderHistoryPage = () => {
     }
   }, [isAuthenticated]);
 
+  // Hàm làm mới danh sách đơn hàng
+  const handleRefresh = () => {
+    fetchOrders();
+  };
+
   // Format price as VND
   const formatPrice = (price) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
   };
 
-  // Format date
+  // Format date and time
   const formatDate = (dateString) => {
-    const options = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' };
+    const options = {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    };
     return new Date(dateString).toLocaleDateString('vi-VN', options);
   };
 
@@ -80,6 +94,36 @@ const OrderHistoryPage = () => {
       default:
         return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  // Get payment method icon and label
+  const getPaymentMethodInfo = (paymentMethod) => {
+    switch (paymentMethod) {
+      case 'cash':
+        return {
+          icon: <FaMoneyBill className="text-green-600" />,
+          label: 'Thanh toán tiền mặt',
+          className: 'bg-green-50 text-green-700'
+        };
+      case 'transfer':
+        return {
+          icon: <FaCreditCard className="text-blue-600" />,
+          label: 'Chuyển khoản',
+          className: 'bg-blue-50 text-blue-700'
+        };
+      default:
+        return {
+          icon: <FaMoneyBill className="text-gray-600" />,
+          label: 'Thanh toán tiền mặt',
+          className: 'bg-gray-50 text-gray-700'
+        };
+    }
+  };
+
+  // Lấy nhãn danh mục dựa vào giá trị
+  const getCategoryLabel = (categoryValue) => {
+    const category = APP_CONFIG.PRODUCT_CATEGORIES.find(c => c.value === categoryValue);
+    return category ? category.label : categoryValue;
   };
 
   if (!isAuthenticated) {
@@ -125,6 +169,15 @@ const OrderHistoryPage = () => {
             </div>
             <div className="ml-3">
               <p className="text-sm text-red-700">{error}</p>
+              <div className="mt-2">
+                <button
+                  onClick={handleRefresh}
+                  className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                >
+                  <FaSync className="mr-1 h-4 w-4" />
+                  Thử lại
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -136,9 +189,23 @@ const OrderHistoryPage = () => {
   if (orders.length === 0) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900">Lịch sử đơn hàng trống</h2>
-          <p className="mt-2 text-gray-500">Bạn chưa có đơn hàng nào</p>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">Lịch sử đơn hàng</h1>
+          <button
+            onClick={handleRefresh}
+            className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            <FaSync className="h-4 w-4 mr-1" />
+            Làm mới
+          </button>
+        </div>
+
+        <div className="text-center py-12 bg-white rounded-lg shadow">
+          <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <h3 className="mt-2 text-lg font-medium text-gray-900">Lịch sử đơn hàng trống</h3>
+          <p className="mt-1 text-gray-500">Bạn chưa có đơn hàng nào</p>
           <div className="mt-6">
             <Link
               to="/products"
@@ -154,67 +221,92 @@ const OrderHistoryPage = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Lịch sử đơn hàng</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Lịch sử đơn hàng</h1>
+        <button
+          onClick={handleRefresh}
+          className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        >
+          <FaSync className="h-4 w-4 mr-1" />
+          Làm mới
+        </button>
+      </div>
 
       <div className="space-y-6">
-        {orders.map((order) => (
-          <div key={order._id} className="bg-white shadow overflow-hidden rounded-md">
-            {/* Order header */}
-            <div className="px-4 py-4 sm:px-6 flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-gray-200">
-              <div className="mb-2 sm:mb-0">
-                <h3 className="text-lg font-medium text-gray-900">
-                  Đơn hàng #{order._id.substring(order._id.length - 8)}
-                </h3>
-                <p className="text-sm text-gray-500">
-                  Đặt hàng vào: {formatDate(order.createdAt)}
-                </p>
-              </div>
-              <div className="flex items-center">
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
-                  {getStatusIcon(order.status)}
-                  <span className="ml-1">{order.status}</span>
-                </span>
-              </div>
-            </div>
+        {orders.map((order) => {
+          const paymentInfo = getPaymentMethodInfo(order.paymentMethod);
 
-            {/* Order items */}
-            <ul className="divide-y divide-gray-200">
-              {order.products.map((item, index) => (
-                <li key={index} className="px-4 py-4 sm:px-6">
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0 h-12 w-12 bg-gray-200 rounded-md flex items-center justify-center">
-                      <span className="text-gray-500 text-xs">Hình ảnh</span>
-                    </div>
-                    <div className="ml-4 flex-1">
-                      <div className="font-medium text-gray-900">{item.name}</div>
-                      <div className="mt-1 flex justify-between">
-                        <div className="text-sm text-gray-500">
-                          SL: {item.quantity} x {formatPrice(item.price)}
+          return (
+            <div key={order._id} className="bg-white shadow overflow-hidden rounded-md">
+              {/* Order header */}
+              <div className="px-4 py-4 sm:px-6 border-b border-gray-200">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900">
+                      Đơn hàng #{order._id.substring(order._id.length - 8)}
+                    </h3>
+                    <p className="text-sm text-gray-500">
+                      Đặt lúc: {formatDate(order.createdAt)}
+                    </p>
+                  </div>
+                  <div className="mt-2 sm:mt-0 flex flex-col sm:flex-row sm:space-x-2">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(order.status)} mb-1 sm:mb-0`}>
+                      {getStatusIcon(order.status)}
+                      <span className="ml-1">{order.status}</span>
+                    </span>
+
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${paymentInfo.className}`}>
+                      {paymentInfo.icon}
+                      <span className="ml-1">{paymentInfo.label}</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Order items */}
+              <ul className="divide-y divide-gray-200">
+                {order.products.map((item, index) => (
+                  <li key={index} className="px-4 py-4 sm:px-6">
+                    <div className="flex items-start">
+                      <div className="flex-shrink-0 h-12 w-12 bg-gray-200 rounded-md flex items-center justify-center">
+                        <span className="text-gray-500 text-xs">Hình ảnh</span>
+                      </div>
+                      <div className="ml-4 flex-1">
+                        <div className="font-medium text-gray-900">{item.name}</div>
+                        <div className="mt-1 flex flex-col sm:flex-row sm:justify-between">
+                          <div className="text-sm text-gray-500">
+                            SL: {item.quantity} x {formatPrice(item.price)}
+                          </div>
+                          <div className="text-sm font-medium text-gray-900 mt-1 sm:mt-0">
+                            {formatPrice(item.quantity * item.price)}
+                          </div>
                         </div>
-                        <div className="text-sm font-medium text-gray-900">
-                          {formatPrice(item.quantity * item.price)}
-                        </div>
+                        {item.product && item.product.category && (
+                          <div className="mt-1 text-xs text-gray-500">
+                            Danh mục: {getCategoryLabel(item.product.category)}
+                          </div>
+                        )}
                       </div>
                     </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
+                  </li>
+                ))}
+              </ul>
 
-            {/* Order footer */}
-            <div className="px-4 py-4 sm:px-6 bg-gray-50 flex flex-col sm:flex-row sm:items-center sm:justify-between">
-              <div className="mb-2 sm:mb-0">
-                <p className="text-sm text-gray-700">
-                  Tổng số sản phẩm: {order.products.reduce((total, item) => total + item.quantity, 0)}
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm text-gray-700">Tổng tiền:</p>
-                <p className="text-xl font-bold text-red-600">{formatPrice(order.totalAmount)}</p>
+              {/* Order footer */}
+              <div className="px-4 py-4 sm:px-6 bg-gray-50 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                <div className="mb-2 sm:mb-0">
+                  <p className="text-sm text-gray-700">
+                    Tổng số sản phẩm: {order.products.reduce((total, item) => total + item.quantity, 0)}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm text-gray-700">Tổng tiền:</p>
+                  <p className="text-xl font-bold text-red-600">{formatPrice(order.totalAmount)}</p>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

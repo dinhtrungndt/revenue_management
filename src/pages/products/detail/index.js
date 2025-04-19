@@ -30,45 +30,22 @@ const ProductDetailPage = () => {
         setLoading(true);
         setError(null);
 
-        // Simulate API call with mock data
-        // In a real application, uncomment this line
-        // const productData = await ProductService.getProductById(id);
-
-        // Mock data for demo purposes
-        const productData = {
-          _id: id,
-          name: 'Royal Canin Medium Adult',
-          category: 'dog',
-          price: 350000,
-          description: 'Thức ăn hạt khô cho chó trưởng thành từ 12 tháng đến 7 tuổi, cân nặng từ 11-25kg, giúp xương chắc khỏe và cơ bắp phát triển tốt',
-          weight: '10kg',
-          stock: 15,
-          featured: true
-        };
-
+        // Lấy thông tin sản phẩm từ API
+        const productData = await ProductService.getProductById(id);
         setProduct(productData);
 
-        // Fetch related products or use mock data
-        const relatedMockData = [
-          {
-            _id: '2',
-            name: 'Pedigree Beef & Vegetables',
-            category: 'dog',
-            price: 275000,
-            weight: '8kg',
-            stock: 20
-          },
-          {
-            _id: '3',
-            name: 'SmartHeart Puppy',
-            category: 'dog',
-            price: 199000,
-            weight: '5kg',
-            stock: 8
-          }
-        ];
+        // Lấy các sản phẩm liên quan (cùng danh mục)
+        const params = {
+          category: productData.category,
+        };
 
-        setRelatedProducts(relatedMockData);
+        const relatedProductsData = await ProductService.getProducts(params);
+        // Lọc ra các sản phẩm khác với sản phẩm hiện tại và giới hạn số lượng
+        const filteredRelatedProducts = relatedProductsData
+          .filter(item => item._id !== id)
+          .slice(0, 4);
+
+        setRelatedProducts(filteredRelatedProducts);
       } catch (err) {
         console.error('Error fetching product:', err);
         setError('Không thể tải thông tin sản phẩm. Vui lòng thử lại sau.');
@@ -146,12 +123,8 @@ const ProductDetailPage = () => {
         paymentMethod: paymentMethod
       };
 
-      // Simulate order creation
-      // In a real application, uncomment this line
-      // await OrderService.createOrder(orderData);
-
-      // For demo purposes, just wait a bit
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Gọi API tạo đơn hàng
+      await OrderService.createOrder(orderData);
 
       setOrderSuccess(true);
       setShowPaymentModal(false);
@@ -159,16 +132,22 @@ const ProductDetailPage = () => {
       // Reset quantity after successful order
       setQuantity(1);
 
-      // Redirect to order history after 2 seconds
+      // Redirect to order history after 3 seconds
       setTimeout(() => {
         navigate('/order-history');
-      }, 2000);
+      }, 3000);
     } catch (err) {
       console.error('Error creating order:', err);
-      setOrderError(err.message || 'Đã xảy ra lỗi khi đặt hàng. Vui lòng thử lại sau.');
+      setOrderError(err.response?.data?.message || err.message || 'Đã xảy ra lỗi khi đặt hàng. Vui lòng thử lại sau.');
     } finally {
       setOrdering(false);
     }
+  };
+
+  // Lấy nhãn danh mục dựa vào giá trị
+  const getCategoryLabel = (categoryValue) => {
+    const category = APP_CONFIG.PRODUCT_CATEGORIES.find(c => c.value === categoryValue);
+    return category ? category.label : categoryValue;
   };
 
   // Loading state
@@ -375,7 +354,7 @@ const ProductDetailPage = () => {
               <h1 className="text-2xl font-bold text-gray-900 mb-2">{product.name}</h1>
               <div className="flex items-center mb-2">
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                  {product.category === 'dog' ? 'Thức ăn cho chó' : 'Thức ăn cho mèo'}
+                  {getCategoryLabel(product.category)}
                 </span>
                 {product.weight && (
                   <span className="ml-2 text-sm text-gray-500">{product.weight}</span>
@@ -406,6 +385,12 @@ const ProductDetailPage = () => {
                     <circle cx="4" cy="4" r="3" />
                   </svg>
                   Hết hàng
+                </span>
+              )}
+
+              {product.featured && (
+                <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                  Sản phẩm nổi bật
                 </span>
               )}
             </div>
@@ -510,7 +495,7 @@ const ProductDetailPage = () => {
       {relatedProducts.length > 0 && (
         <div className="mt-12">
           <h2 className="text-xl font-bold text-gray-900 mb-6">Sản phẩm liên quan</h2>
-          <div className="grid grid-cols-1 gap-y-10 gap-x-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
             {relatedProducts.map((relatedProduct) => (
               <Link
                 key={relatedProduct._id}
@@ -518,20 +503,30 @@ const ProductDetailPage = () => {
                 className="group"
               >
                 <div className="relative bg-white rounded-lg shadow-sm overflow-hidden group-hover:shadow-md transition-shadow duration-300">
-                  <div className="aspect-w-3 aspect-h-2 bg-gray-200 overflow-hidden">
-                    <div className="h-48 flex items-center justify-center text-gray-500">Hình ảnh sản phẩm</div>
+                  <div className="aspect-w-1 aspect-h-1 bg-gray-200 overflow-hidden">
+                    <div className="h-32 flex items-center justify-center text-gray-500 text-xs">Hình ảnh sản phẩm</div>
+                    {relatedProduct.stock === 0 && (
+                      <div className="absolute top-0 right-0 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 text-xs">
+                        Hết hàng
+                      </div>
+                    )}
+                    {relatedProduct.stock > 0 && relatedProduct.stock < 10 && (
+                      <div className="absolute top-0 right-0 bg-yellow-500 text-white text-xs font-bold px-1.5 py-0.5 text-xs">
+                        Sắp hết
+                      </div>
+                    )}
                   </div>
-                  <div className="p-4">
-                    <h3 className="text-lg font-medium text-gray-900 group-hover:text-blue-600 truncate">
+                  <div className="p-2">
+                    <h3 className="text-sm font-medium text-gray-900 group-hover:text-blue-600 truncate">
                       {relatedProduct.name}
                     </h3>
-                    <p className="mt-1 text-sm text-gray-500">
-                      {relatedProduct.category === 'dog' ? 'Thức ăn cho chó' : 'Thức ăn cho mèo'}
+                    <p className="mt-0.5 text-xs text-gray-500 truncate">
+                      {getCategoryLabel(relatedProduct.category)}
                     </p>
-                    <div className="mt-2 flex items-center justify-between">
-                      <p className="text-lg font-medium text-red-600">{formatPrice(relatedProduct.price)}</p>
+                    <div className="mt-1 flex items-center justify-between">
+                      <p className="text-sm font-medium text-red-600">{formatPrice(relatedProduct.price)}</p>
                       {relatedProduct.weight && (
-                        <p className="text-sm text-gray-500">{relatedProduct.weight}</p>
+                        <p className="text-xs text-gray-500">{relatedProduct.weight}</p>
                       )}
                     </div>
                   </div>
