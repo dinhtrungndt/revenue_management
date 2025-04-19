@@ -43,7 +43,8 @@ const Login = () => {
       authLogin(userData);
 
       // Chuyển hướng đến trang trước đó hoặc trang chủ
-      const from = location.state?.from?.pathname || '/';
+      // const from = location.state?.from?.pathname || '/';
+      const from = '/products'
       navigate(from, { replace: true });
     } catch (error) {
       setError(error.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.');
