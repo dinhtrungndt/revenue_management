@@ -27,7 +27,11 @@ export const ProductService = {
   // Thêm sản phẩm mới (Admin only)
   createProduct: async (productData) => {
     try {
-      const response = await apiClient.post('/api/products', productData);
+      const response = await apiClient.post('/api/products', productData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
       return response;
     } catch (error) {
       console.error('Error creating product:', error);

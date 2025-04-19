@@ -1,6 +1,6 @@
 const API_CONFIG = {
-  BASE_URL: process.env.REACT_APP_API_URL,
-  // BASE_URL: 'http://192.168.1.23:8080',
+  // BASE_URL: process.env.REACT_APP_API_URL,
+  BASE_URL: 'http://192.168.1.23:8080',
   // Timeout request (ms)
   TIMEOUT: 30000,
   HEADERS: {

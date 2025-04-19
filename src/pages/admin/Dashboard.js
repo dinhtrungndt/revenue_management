@@ -3,6 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import {FaBoxes, FaShoppingCart, FaMoneyBillWave } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import { fetchReportDashboard } from '../../stores/redux/actions/adminActions.js';
+import { MdOutlineProductionQuantityLimits } from 'react-icons/md';
 
 const Dashboard = () => {
   const dispatch = useDispatch();
@@ -164,6 +165,15 @@ const Dashboard = () => {
                   <FaMoneyBillWave className="h-5 w-5 text-yellow-600 mr-3" />
                   <span className="text-gray-800 font-medium">Báo cáo doanh thu</span>
                 </div>
+                <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                </svg>
+              </Link>
+              <Link to="/admin/add-products" className="bg-purple-50 p-4 rounded-lg flex items-center justify-between hover:bg-purple-100">
+                <div className="flex items-center">
+                  <MdOutlineProductionQuantityLimits className="h-5 w-5 text-purple-600 mr-3" />
+                  <span className="text-gray-800 font-medium">Thêm sản phẩm</span>
+                  </div>
                 <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
                 </svg>

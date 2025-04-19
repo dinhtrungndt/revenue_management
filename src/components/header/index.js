@@ -1,8 +1,6 @@
-// src/components/header/index.js
-
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { FaBars, FaUser, FaSearch, FaTimes, FaSignOutAlt, FaShoppingBag, FaClipboardList, FaCog, FaChartLine } from 'react-icons/fa';
+import { FaBars, FaUser, FaSearch, FaTimes, FaSignOutAlt, FaShoppingBag, FaClipboardList, FaChartLine } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContext';
 import { SideBar } from '../sidebar';
 
@@ -63,6 +61,7 @@ export const HeaderPage = () => {
       if (path === '/admin/inventory') return 'Quản Lý Kho';
       if (path === '/admin/export') return 'Báo Cáo Xuất Kho';
       if (path === '/admin/revenue') return 'Báo Cáo Doanh Thu';
+      if (path === '/admin/add-products') return 'Thêm sản phẩm';
     }
 
     // Staff routes

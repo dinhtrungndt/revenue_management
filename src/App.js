@@ -18,6 +18,7 @@ import AdminDashboard from './pages/admin/Dashboard';
 import InventoryReport from './pages/admin/InventoryReport';
 import ExportReport from './pages/admin/ExportReport';
 import RevenueReport from './pages/admin/RevenueReport';
+import AddProducts from './pages/products/add/index.js';
 
 // Components & Layouts
 import PrivateRoute from './components/route/PrivateRoute.js';
@@ -87,6 +88,7 @@ function App() {
               <Route path="inventory" element={<InventoryReport />} />
               <Route path="export" element={<ExportReport />} />
               <Route path="revenue" element={<RevenueReport />} />
+              <Route path="add-products" element={<AddProducts />} />
             </Route>
           </Route>
 

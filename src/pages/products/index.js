@@ -148,6 +148,10 @@ const ProductsPage = () => {
   const closeProductModal = () => {
     setShowProductModal(false);
     setSelectedProduct(null);
+    setTimeout(() => {
+      setOrderSuccess(false);
+      setOrderError(null);
+    }, 1000);
   };
 
   // Handlers for quantity
