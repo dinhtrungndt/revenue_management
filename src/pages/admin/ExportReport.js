@@ -1,61 +1,47 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { FaSearch, FaChartLine, FaCalendarAlt } from 'react-icons/fa';
+import { useSelector, useDispatch } from 'react-redux';
+import { FaSearch, FaBox, FaCalendarAlt } from 'react-icons/fa';
+import { fetchExportReport } from '../../stores/redux/actions/adminActions.js';
 
-const RevenueReport = () => {
-  const [revenueData, setRevenueData] = useState({
-    summary: {
-      totalOrders: 0,
-      totalRevenue: 0
-    },
-    timeSeries: [],
-    categoryStats: {}
-  });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
+const ExportReport = () => {
+  const dispatch = useDispatch();
+  const { reports, loading, error } = useSelector((state) => state.adminReducer);
   // Filters
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [interval, setInterval] = useState('daily');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterCategory, setFilterCategory] = useState('all');
 
   useEffect(() => {
-    fetchRevenueReport();
-  }, []);
-
-  const fetchRevenueReport = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const API_URL = process.env.REACT_APP_API_URL;
-
-      // Build query params
-      const params = {};
-      if (startDate) params.startDate = startDate;
-      if (endDate) params.endDate = endDate;
-      params.interval = interval;
-
-      const response = await axios.get(`${API_URL}/reports/revenue`, { params });
-
-      setRevenueData(response.data);
-    } catch (err) {
-      setError('Không thể tải dữ liệu báo cáo. Vui lòng thử lại sau.');
-      console.error('Error fetching revenue report:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    dispatch(fetchExportReport({ startDate, endDate, category: filterCategory !== 'all' ? filterCategory : undefined }));
+  }, [dispatch, startDate, endDate, filterCategory]);
 
   const handleFilterSubmit = (e) => {
     e.preventDefault();
-    fetchRevenueReport();
+    dispatch(fetchExportReport({ startDate, endDate, category: filterCategory !== 'all' ? filterCategory : undefined }));
   };
 
   // Định dạng tiền VND
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
   };
+
+  const exportReport = reports.export || {
+    summary: { totalExports: 0, totalQuantity: 0, totalValue: 0 },
+    transactions: [],
+    categoryStats: {},
+  };
+
+  // Lọc giao dịch theo từ khóa tìm kiếm với kiểm tra productName
+  const filteredTransactions = exportReport.transactions.filter((transaction) => {
+    // Ensure productName exists and is a string; otherwise, return false to exclude this transaction
+    const productName = transaction?.productName;
+    if (typeof productName !== 'string') {
+      // console.warn('Transaction missing productName or productName is not a string:', transaction);
+      return false;
+    }
+    return productName.toLowerCase().includes(searchTerm.toLowerCase());
+  });
 
   if (loading) {
     return (
@@ -74,7 +60,7 @@ const RevenueReport = () => {
     return (
       <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert">
         <p className="font-bold">Lỗi</p>
-        <p>{error}</p>
+        <p>{error.message}</p>
       </div>
     );
   }
@@ -84,7 +70,7 @@ const RevenueReport = () => {
       {/* Filters */}
       <div className="bg-white rounded-lg shadow-md mb-6">
         <div className="p-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold">Bộ lọc báo cáo</h2>
+          <h2 className="text-lg font-semibold">Bộ lọc báo cáo xuất kho</h2>
         </div>
         <div className="p-4">
           <form onSubmit={handleFilterSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -119,14 +105,15 @@ const RevenueReport = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Khoảng thời gian</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Danh mục</label>
               <select
                 className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-                value={interval}
-                onChange={(e) => setInterval(e.target.value)}
+                value={filterCategory}
+                onChange={(e) => setFilterCategory(e.target.value)}
               >
-                <option value="daily">Theo ngày</option>
-                <option value="monthly">Theo tháng</option>
+                <option value="all">Tất cả</option>
+                <option value="dog">Chó</option>
+                <option value="cat">Mèo</option>
               </select>
             </div>
 
@@ -144,60 +131,52 @@ const RevenueReport = () => {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="bg-white p-4 rounded-lg shadow">
           <div className="flex items-center">
-            <div className="bg-green-100 p-3 rounded-full mr-3">
-              <FaChartLine className="text-green-500" />
+            <div className="bg-blue-100 p-3 rounded-full mr-3">
+              <FaBox className="text-blue-500" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Tổng doanh thu</p>
-              <p className="text-lg font-semibold">{formatCurrency(revenueData.summary.totalRevenue)}</p>
+              <p className="text-sm text-gray-500">Tổng số lần xuất kho</p>
+              <p className="text-lg font-semibold">{exportReport.summary.totalExports}</p>
             </div>
           </div>
         </div>
 
         <div className="bg-white p-4 rounded-lg shadow">
           <div className="flex items-center">
-            <div className="bg-blue-100 p-3 rounded-full mr-3">
-              <svg className="h-5 w-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <div className="bg-green-100 p-3 rounded-full mr-3">
+              <svg className="h-5 w-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
               </svg>
             </div>
             <div>
-              <p className="text-sm text-gray-500">Tổng số đơn hàng</p>
-              <p className="text-lg font-semibold">{revenueData.summary.totalOrders}</p>
+              <p className="text-sm text-gray-500">Tổng số lượng xuất</p>
+              <p className="text-lg font-semibold">{exportReport.summary.totalQuantity}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-lg shadow">
+          <div className="flex items-center">
+            <div className="bg-yellow-100 p-3 rounded-full mr-3">
+              <svg className="h-5 w-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Tổng giá trị xuất kho</p>
+              <p className="text-lg font-semibold">{formatCurrency(exportReport.summary.totalValue)}</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Revenue Chart */}
+      {/* Category Stats */}
       <div className="bg-white rounded-lg shadow-md mb-6">
         <div className="p-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold">Biểu đồ doanh thu {interval === 'daily' ? 'theo ngày' : 'theo tháng'}</h2>
-        </div>
-        <div className="p-4 h-80">
-          {revenueData.timeSeries.length > 0 ? (
-            <div className="h-full">
-              {/* Here we would typically render a chart component */}
-              <div className="flex items-center justify-center h-full bg-gray-50 rounded">
-                <p className="text-gray-500">Biểu đồ doanh thu sẽ được hiển thị ở đây</p>
-                {/* You can replace this with a charting library like Chart.js or Recharts */}
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-center justify-center h-full bg-gray-50 rounded">
-              <p className="text-gray-500">Không có dữ liệu để hiển thị</p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Revenue by Category */}
-      <div className="bg-white rounded-lg shadow-md mb-6">
-        <div className="p-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold">Doanh thu theo danh mục</h2>
+          <h2 className="text-lg font-semibold">Thống kê theo danh mục</h2>
         </div>
         <div className="p-4">
           <div className="overflow-x-auto">
@@ -208,19 +187,19 @@ const RevenueReport = () => {
                     Danh mục
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Số lượng bán
+                    Số lần xuất
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Doanh thu
+                    Số lượng
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Tỷ lệ
+                    Giá trị
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {Object.entries(revenueData.categoryStats).length > 0 ? (
-                  Object.entries(revenueData.categoryStats).map(([category, stats]) => (
+                {Object.entries(exportReport.categoryStats).length > 0 ? (
+                  Object.entries(exportReport.categoryStats).map(([category, stats]) => (
                     <tr key={category}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
@@ -228,23 +207,13 @@ const RevenueReport = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {stats.count}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {stats.quantity}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatCurrency(stats.revenue)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="w-full bg-gray-200 rounded-full h-2.5">
-                            <div
-                              className="bg-blue-600 h-2.5 rounded-full"
-                              style={{ width: `${(stats.revenue / revenueData.summary.totalRevenue) * 100}%` }}
-                            ></div>
-                          </div>
-                          <span className="ml-2 text-sm text-gray-500">
-                            {Math.round((stats.revenue / revenueData.summary.totalRevenue) * 100)}%
-                          </span>
-                        </div>
+                        {formatCurrency(stats.value)}
                       </td>
                     </tr>
                   ))
@@ -261,10 +230,22 @@ const RevenueReport = () => {
         </div>
       </div>
 
-      {/* Time Series Data Table */}
+      {/* Transaction List */}
       <div className="bg-white rounded-lg shadow-md">
-        <div className="p-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold">Chi tiết doanh thu {interval === 'daily' ? 'theo ngày' : 'theo tháng'}</h2>
+        <div className="p-4 border-b border-gray-200 flex justify-between items-center flex-wrap gap-2">
+          <h2 className="text-lg font-semibold">Danh sách giao dịch xuất kho</h2>
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Tìm kiếm sản phẩm..."
+              className="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+              <FaSearch className="text-gray-400" />
+            </div>
+          </div>
         </div>
         <div className="p-4">
           <div className="overflow-x-auto">
@@ -272,37 +253,51 @@ const RevenueReport = () => {
               <thead className="bg-gray-50">
                 <tr>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {interval === 'daily' ? 'Ngày' : 'Tháng'}
+                    Sản phẩm
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Số đơn hàng
+                    Danh mục
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Doanh thu
+                    Số lượng
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Giá trị
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Ngày xuất
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {revenueData.timeSeries.length > 0 ? (
-                  revenueData.timeSeries.map((item) => (
-                    <tr key={interval === 'daily' ? item.date : item.month}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {interval === 'daily' ? item.date : item.month}
+                {filteredTransactions.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                      Không tìm thấy giao dịch nào
+                    </td>
+                  </tr>
+                ) : (
+                  filteredTransactions.map((transaction) => (
+                    <tr key={transaction._id}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">{transaction.productName || 'Không xác định'}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                          {transaction.category === 'dog' ? 'Chó' : 'Mèo'}
+                        </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {item.orders}
+                        {transaction.quantity}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatCurrency(item.revenue)}
+                        {formatCurrency(transaction.value)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(transaction.date).toLocaleDateString('vi-VN')}
                       </td>
                     </tr>
                   ))
-                ) : (
-                  <tr>
-                    <td colSpan="3" className="px-6 py-4 text-center text-sm text-gray-500">
-                      Không có dữ liệu
-                    </td>
-                  </tr>
                 )}
               </tbody>
             </table>
@@ -313,4 +308,4 @@ const RevenueReport = () => {
   );
 };
 
-export default RevenueReport;
+export default ExportReport;

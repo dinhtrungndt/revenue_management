@@ -1,38 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { FaUsers, FaBoxes, FaShoppingCart, FaMoneyBillWave } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
+import { fetchReportDashboard } from '../../stores/redux/actions/adminActions.js';
 
 const Dashboard = () => {
-  const [dashboard, setDashboard] = useState({
-    orders: { total: 0, recent: 0 },
-    revenue: { total: 0, recent: 0 },
-    inventory: { totalProducts: 0, totalStock: 0, totalValue: 0 },
-    topProducts: []
-  });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const dispatch = useDispatch();
+  const { reports, loading, error } = useSelector((state) => state.adminReducer);
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const API_URL = process.env.REACT_APP_API_URL;
-        const response = await axios.get(`${API_URL}/reports/dashboard`);
-
-        setDashboard(response.data);
-      } catch (err) {
-        setError('Không thể tải dữ liệu dashboard. Vui lòng thử lại sau.');
-        console.error('Error fetching dashboard:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchDashboardData();
-  }, []);
+  React.useEffect(() => {
+    dispatch(fetchReportDashboard());
+  }, [dispatch]);
 
   // Định dạng tiền VND
   const formatCurrency = (amount) => {
@@ -56,10 +34,17 @@ const Dashboard = () => {
     return (
       <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert">
         <p className="font-bold">Lỗi</p>
-        <p>{error}</p>
+        <p>{error.message}</p>
       </div>
     );
   }
+
+  const dashboard = reports.dashboard || {
+    orders: { total: 0, recent: 0 },
+    revenue: { total: 0, recent: 0 },
+    inventory: { totalProducts: 0, totalStock: 0, totalValue: 0 },
+    topProducts: [],
+  };
 
   return (
     <div className="container mx-auto px-4">

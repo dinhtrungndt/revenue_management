@@ -1,19 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useSelector, useDispatch } from 'react-redux';
 import { FaSearch, FaExclamationTriangle, FaBoxOpen } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContext';
+import { fetchInventoryReport } from '../../stores/redux/actions/adminActions.js';
 
 const InventoryReport = () => {
-  const [inventory, setInventory] = useState([]);
-  const [summary, setSummary] = useState({
-    totalProducts: 0,
-    totalValue: 0,
-    lowStockCount: 0,
-    outOfStockCount: 0
-  });
-  const [categoryStats, setCategoryStats] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const dispatch = useDispatch();
+  const { reports, loading, error } = useSelector((state) => state.adminReducer);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
 
@@ -21,34 +14,22 @@ const InventoryReport = () => {
   const isAdmin = user && user.role === 'admin';
 
   useEffect(() => {
-    const fetchInventory = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+    dispatch(fetchInventoryReport({ category: filterCategory !== 'all' ? filterCategory : undefined }));
+  }, [dispatch, filterCategory]);
 
-        const API_URL = process.env.REACT_APP_API_URL;
-        const response = await axios.get(`${API_URL}/reports/inventory`, {
-          params: {
-            category: filterCategory !== 'all' ? filterCategory : undefined
-          }
-        });
-
-        setInventory(response.data.products);
-        setSummary(response.data.summary);
-        setCategoryStats(response.data.categoryStats);
-      } catch (err) {
-        setError('Không thể tải dữ liệu báo cáo. Vui lòng thử lại sau.');
-        console.error('Error fetching inventory:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchInventory();
-  }, [filterCategory]);
+  const inventoryReport = reports.inventory || {
+    products: [],
+    summary: {
+      totalProducts: 0,
+      totalValue: 0,
+      lowStockCount: 0,
+      outOfStockCount: 0,
+    },
+    categoryStats: {},
+  };
 
   // Lọc sản phẩm theo từ khóa tìm kiếm
-  const filteredProducts = inventory.filter(product =>
+  const filteredProducts = inventoryReport.products.filter((product) =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -74,7 +55,7 @@ const InventoryReport = () => {
     return (
       <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert">
         <p className="font-bold">Lỗi</p>
-        <p>{error}</p>
+        <p>{error.message}</p>
       </div>
     );
   }
@@ -89,7 +70,7 @@ const InventoryReport = () => {
             </div>
             <div>
               <p className="text-sm text-gray-500">Tổng số sản phẩm</p>
-              <p className="text-lg font-semibold">{summary.totalProducts}</p>
+              <p className="text-lg font-semibold">{inventoryReport.summary.totalProducts}</p>
             </div>
           </div>
         </div>
@@ -103,7 +84,7 @@ const InventoryReport = () => {
             </div>
             <div>
               <p className="text-sm text-gray-500">Tổng giá trị tồn kho</p>
-              <p className="text-lg font-semibold">{formatCurrency(summary.totalValue)}</p>
+              <p className="text-lg font-semibold">{formatCurrency(inventoryReport.summary.totalValue)}</p>
             </div>
           </div>
         </div>
@@ -115,7 +96,7 @@ const InventoryReport = () => {
             </div>
             <div>
               <p className="text-sm text-gray-500">Sắp hết hàng</p>
-              <p className="text-lg font-semibold">{summary.lowStockCount}</p>
+              <p className="text-lg font-semibold">{inventoryReport.summary.lowStockCount}</p>
             </div>
           </div>
         </div>
@@ -129,7 +110,7 @@ const InventoryReport = () => {
             </div>
             <div>
               <p className="text-sm text-gray-500">Hết hàng</p>
-              <p className="text-lg font-semibold">{summary.outOfStockCount}</p>
+              <p className="text-lg font-semibold">{inventoryReport.summary.outOfStockCount}</p>
             </div>
           </div>
         </div>
@@ -159,7 +140,7 @@ const InventoryReport = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {Object.entries(categoryStats).map(([category, stats]) => (
+                {Object.entries(inventoryReport.categoryStats).map(([category, stats]) => (
                   <tr key={category}>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">

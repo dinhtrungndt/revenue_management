@@ -2,25 +2,34 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaArrowRight, FaSearch, FaDog, FaCat, FaBoxOpen, FaTruck } from 'react-icons/fa';
 import { ProductService } from '../../services/apiService';
+import { useDispatch, useSelector } from 'react-redux';
 
 const HomePage = () => {
+  const dispatch = useDispatch();
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [categories] = useState([
     { id: 1, name: 'Thức ăn cho chó', icon: <FaDog size={24} />, path: '/products?category=dog' },
-    { id: 2, name: 'Thức ăn cho mèo', icon: <FaCat size={24} />, path: '/products?category=cat' }
+    { id: 2, name: 'Thức ăn cho mèo', icon: <FaCat size={24} />, path: '/products?category=cat' },
   ]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+
+  // Corrected Redux state selector
+  const adminReducer = useSelector((state) => state.adminReducer);
+
+  console.log('adminReducer', adminReducer);
 
   // Fetch sản phẩm nổi bật khi component mount
   useEffect(() => {
     const fetchFeaturedProducts = async () => {
       try {
         setLoading(true);
-        const products = await ProductService.getProducts({ featured: true });
+        const response = await ProductService.getProducts({ featured: true });
+
+        const products = response?.data;
         if (Array.isArray(products)) {
-          setFeaturedProducts(products.slice(0, 4)); // Lấy tối đa 4 sản phẩm
+          setFeaturedProducts(products.slice(0, 4));
         } else {
           console.error('Invalid API response: products is not an array', products);
           setError('Dữ liệu sản phẩm không hợp lệ');
@@ -135,8 +144,7 @@ const HomePage = () => {
                 <p className="mt-1 text-gray-500">
                   {category.id === 1
                     ? 'Sản phẩm dinh dưỡng cao cấp dành cho các loại chó'
-                    : 'Thực phẩm đầy đủ dưỡng chất cho mèo mọi lứa tuổi'
-                  }
+                    : 'Thực phẩm đầy đủ dưỡng chất cho mèo mọi lứa tuổi'}
                 </p>
               </div>
               <div className="absolute bottom-0 w-full h-1 bg-blue-600"></div>
@@ -162,6 +170,8 @@ const HomePage = () => {
           </div>
         ) : error ? (
           <div className="text-center text-red-500">{error}</div>
+        ) : featuredProducts.length === 0 ? (
+          <div className="text-center text-gray-500">Không có sản phẩm nổi bật nào</div>
         ) : (
           <div className="grid grid-cols-1 gap-y-10 gap-x-6 sm:grid-cols-2 lg:grid-cols-4">
             {featuredProducts.map((product) => (
@@ -170,7 +180,9 @@ const HomePage = () => {
                 className="group relative bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-lg transition-shadow duration-300"
               >
                 <div className="aspect-w-3 aspect-h-2 overflow-hidden bg-gray-200 group-hover:opacity-90">
-                  <div className="h-48 flex items-center justify-center text-gray-500">Hình ảnh sản phẩm</div>
+                  <div className="h-48 flex items-center justify-center text-gray-500">
+                    Hình ảnh sản phẩm
+                  </div>
                 </div>
                 <div className="p-4">
                   <div className="flex justify-between items-start">
@@ -240,7 +252,12 @@ const HomePage = () => {
             <div className="bg-white p-6 rounded-lg shadow-sm">
               <div className="bg-blue-100 text-blue-600 p-3 rounded-full inline-block mb-4">
                 <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
               </div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">Giá cả hợp lý</h3>
@@ -252,7 +269,12 @@ const HomePage = () => {
             <div className="bg-white p-6 rounded-lg shadow-sm">
               <div className="bg-blue-100 text-blue-600 p-3 rounded-full inline-block mb-4">
                 <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                  />
                 </svg>
               </div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">Đổi trả dễ dàng</h3>
