@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { FaSearch, FaExclamationTriangle, FaBoxOpen } from 'react-icons/fa';
-import { useAuth } from '../../contexts/AuthContext';
 import { fetchInventoryReport } from '../../stores/redux/actions/adminActions.js';
 
 const InventoryReport = () => {
@@ -9,9 +8,6 @@ const InventoryReport = () => {
   const { reports, loading, error } = useSelector((state) => state.adminReducer);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
-
-  const { user } = useAuth();
-  const isAdmin = user && user.role === 'admin';
 
   useEffect(() => {
     dispatch(fetchInventoryReport({ category: filterCategory !== 'all' ? filterCategory : undefined }));

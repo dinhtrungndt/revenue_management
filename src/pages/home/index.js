@@ -1,49 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaArrowRight, FaSearch, FaDog, FaCat, FaBoxOpen, FaTruck } from 'react-icons/fa';
-import { ProductService } from '../../services/apiService';
 import { useDispatch, useSelector } from 'react-redux';
+import { fetchExportReport, fetchInventoryReport, fetchProducts, fetchReportDashboard, fetchRevenueReport, fetchUserOrders } from '../../stores/redux/actions/adminActions.js';
 
 const HomePage = () => {
   const dispatch = useDispatch();
-  const [featuredProducts, setFeaturedProducts] = useState([]);
   const [categories] = useState([
     { id: 1, name: 'Thức ăn cho chó', icon: <FaDog size={24} />, path: '/products?category=dog' },
     { id: 2, name: 'Thức ăn cho mèo', icon: <FaCat size={24} />, path: '/products?category=cat' },
   ]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const navigate = useNavigate();
 
-  // Corrected Redux state selector
-  const adminReducer = useSelector((state) => state.adminReducer);
+  const { products, loading, error} = useSelector((state) => state.adminReducer);
 
-  console.log('adminReducer', adminReducer);
-
-  // Fetch sản phẩm nổi bật khi component mount
   useEffect(() => {
-    const fetchFeaturedProducts = async () => {
-      try {
-        setLoading(true);
-        const response = await ProductService.getProducts({ featured: true });
-
-        const products = response?.data;
-        if (Array.isArray(products)) {
-          setFeaturedProducts(products.slice(0, 4));
-        } else {
-          console.error('Invalid API response: products is not an array', products);
-          setError('Dữ liệu sản phẩm không hợp lệ');
-        }
-        setLoading(false);
-      } catch (err) {
-        console.error('Error fetching featured products:', err);
-        setError('Không thể tải sản phẩm nổi bật');
-        setLoading(false);
-      }
-    };
-
-    fetchFeaturedProducts();
-  }, []);
+    dispatch(fetchProducts());
+    dispatch(fetchUserOrders());
+    dispatch(fetchReportDashboard());
+    dispatch(fetchInventoryReport());
+    dispatch(fetchExportReport());
+    dispatch(fetchRevenueReport());
+  }, [dispatch]);
 
   // Xử lý khi nhấp vào danh mục
   const handleCategoryClick = (path) => {
@@ -170,11 +148,11 @@ const HomePage = () => {
           </div>
         ) : error ? (
           <div className="text-center text-red-500">{error}</div>
-        ) : featuredProducts.length === 0 ? (
+        ) : products.length === 0 ? (
           <div className="text-center text-gray-500">Không có sản phẩm nổi bật nào</div>
         ) : (
           <div className="grid grid-cols-1 gap-y-10 gap-x-6 sm:grid-cols-2 lg:grid-cols-4">
-            {featuredProducts.map((product) => (
+            {products.map((product) => (
               <div
                 key={product._id}
                 className="group relative bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-lg transition-shadow duration-300"

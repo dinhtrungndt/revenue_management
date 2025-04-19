@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { FaUsers, FaBoxes, FaShoppingCart, FaMoneyBillWave } from 'react-icons/fa';
+import {FaBoxes, FaShoppingCart, FaMoneyBillWave } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import { fetchReportDashboard } from '../../stores/redux/actions/adminActions.js';
 
@@ -8,7 +8,7 @@ const Dashboard = () => {
   const dispatch = useDispatch();
   const { reports, loading, error } = useSelector((state) => state.adminReducer);
 
-  React.useEffect(() => {
+  useEffect(() => {
     dispatch(fetchReportDashboard());
   }, [dispatch]);
 

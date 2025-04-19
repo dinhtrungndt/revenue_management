@@ -112,7 +112,7 @@ export const updateProduct = (id, productData) => {
 export const deleteProduct = (id) => {
   return async (dispatch) => {
     try {
-      const response = await apiClient.delete(`/api/products/${id}`);
+      await apiClient.delete(`/api/products/${id}`);
       dispatch({
         type: DELETE_PRODUCT,
         payload: { id },

@@ -1,127 +1,84 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FaSearch, FaFilter, FaSortAmountDown, FaSortAmountUp } from 'react-icons/fa';
-import { ProductService } from '../../services/apiService';
+import { useDispatch, useSelector } from 'react-redux';
 import { APP_CONFIG } from '../../config';
+import { fetchProducts } from '../../stores/redux/actions/adminActions.js';
 
 const ProductsPage = () => {
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  // Filters
+  // Local state for filters
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortOption, setSortOption] = useState('createdAt_desc');
 
+  const dispatch = useDispatch();
+  const { products = [], loading = false, error = null } = useSelector((state) => state.adminReducer || {});
+
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Parse URL query parameters
   useEffect(() => {
-    const queryParams = new URLSearchParams(location.search);
+    // Nếu state thay đổi do tương tác người dùng (không phải từ URL), cập nhật URL
+    if (!location.search.includes(selectedCategory) ||
+        !location.search.includes(searchTerm) ||
+        !location.search.includes(sortOption)) {
 
-    const category = queryParams.get('category');
-    if (category) {
-      setSelectedCategory(category);
-    }
+      const queryParams = new URLSearchParams();
 
-    const search = queryParams.get('search');
-    if (search) {
-      setSearchTerm(search);
-    }
-
-    const sort = queryParams.get('sort');
-    if (sort) {
-      setSortOption(sort);
-    }
-  }, [location.search]);
-
-  // Fetch products when filters change
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        setLoading(true);
-
-        // Prepare query params
-        const params = {};
-
-        if (selectedCategory !== 'all') {
-          params.category = selectedCategory;
-        }
-
-        if (searchTerm) {
-          params.search = searchTerm;
-        }
-
-        // Sort handling
-        if (sortOption) {
-          const [field, direction] = sortOption.split('_');
-          params.sortBy = field;
-          params.sortDirection = direction;
-        }
-
-        const data = await ProductService.getProducts(params);
-
-        // Sắp xếp dữ liệu ở phía client nếu API không hỗ trợ
-        if (sortOption && data.length > 0) {
-          const [field, direction] = sortOption.split('_');
-
-          // Sắp xếp theo các trường khác nhau
-          if (field === 'createdAt') {
-            data.sort((a, b) => {
-              const dateA = new Date(a.createdAt || 0).getTime();
-              const dateB = new Date(b.createdAt || 0).getTime();
-              return direction === 'asc' ? dateA - dateB : dateB - dateA;
-            });
-          } else if (field === 'price') {
-            data.sort((a, b) => {
-              return direction === 'asc' ? a.price - b.price : b.price - a.price;
-            });
-          } else if (field === 'name') {
-            data.sort((a, b) => {
-              return direction === 'asc'
-                ? a.name.localeCompare(b.name, 'vi')
-                : b.name.localeCompare(a.name, 'vi');
-            });
-          }
-        }
-
-        setProducts(data);
-        setError(null);
-      } catch (err) {
-        console.error('Error fetching products:', err);
-        setError('Không thể tải danh sách sản phẩm. Vui lòng thử lại sau.');
-      } finally {
-        setLoading(false);
+      if (selectedCategory !== 'all') {
+        queryParams.set('category', selectedCategory);
       }
-    };
 
-    fetchProducts();
-  }, [selectedCategory, searchTerm, sortOption]);
+      if (searchTerm) {
+        queryParams.set('search', searchTerm);
+      }
 
-  // Update URL when filters change
-  useEffect(() => {
-    const queryParams = new URLSearchParams();
+      if (sortOption !== 'createdAt_desc') {
+        queryParams.set('sort', sortOption);
+      }
+
+      const queryString = queryParams.toString();
+      navigate(
+        {
+          pathname: '/products',
+          search: queryString ? `?${queryString}` : '',
+        },
+        { replace: true }
+      );
+      return; // Dừng effect ở đây, sẽ chạy lại sau khi URL được cập nhật
+    }
+
+    // Fetch sản phẩm dựa trên các filter hiện tại
+    const params = {};
 
     if (selectedCategory !== 'all') {
-      queryParams.set('category', selectedCategory);
+      params.category = selectedCategory;
     }
 
     if (searchTerm) {
-      queryParams.set('search', searchTerm);
+      params.search = searchTerm;
     }
 
-    if (sortOption !== 'createdAt_desc') {
-      queryParams.set('sort', sortOption);
-    }
+    params.sortOption = sortOption;
 
-    const queryString = queryParams.toString();
-    navigate({
-      pathname: '/products',
-      search: queryString ? `?${queryString}` : ''
-    }, { replace: true });
-  }, [selectedCategory, searchTerm, sortOption, navigate]);
+    // Thêm flag để kiểm soát việc cập nhật sau khi unmount
+    let isActive = true;
+
+    const fetchData = async () => {
+      try {
+        await dispatch(fetchProducts(params));
+      } catch (error) {
+        console.error("Error fetching products:", error);
+      }
+    };
+
+    fetchData();
+
+    // Cleanup function
+    return () => {
+      isActive = false;
+    };
+  }, [selectedCategory, searchTerm, sortOption, navigate, location.search, dispatch]);
 
   // Handle search form submission
   const handleSearch = (e) => {
@@ -175,11 +132,10 @@ const ProductsPage = () => {
             <div className="flex flex-wrap gap-1.5">
               <button
                 onClick={() => handleCategoryChange('all')}
-                className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                  selectedCategory === 'all'
+                className={`px-2 py-0.5 rounded-full text-xs font-medium ${selectedCategory === 'all'
                     ? 'bg-blue-600 text-white'
                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
+                  }`}
               >
                 Tất cả
               </button>
@@ -187,11 +143,10 @@ const ProductsPage = () => {
                 <button
                   key={category.value}
                   onClick={() => handleCategoryChange(category.value)}
-                  className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                    selectedCategory === category.value
+                  className={`px-2 py-0.5 rounded-full text-xs font-medium ${selectedCategory === category.value
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
+                    }`}
                 >
                   {category.label}
                 </button>
@@ -240,7 +195,7 @@ const ProductsPage = () => {
                     onClick={() => handleCategoryChange('all')}
                     className="ml-1 text-blue-500 hover:text-blue-700 focus:outline-none"
                   >
-                    &times;
+                    ×
                   </button>
                 </span>
               )}
@@ -253,7 +208,7 @@ const ProductsPage = () => {
                     onClick={() => setSearchTerm('')}
                     className="ml-1 text-blue-500 hover:text-blue-700 focus:outline-none"
                   >
-                    &times;
+                    ×
                   </button>
                 </span>
               )}
@@ -370,46 +325,51 @@ const ProductsPage = () => {
             ))}
           </div>
 
-          {/* Pagination placeholder */}
+          {/* Pagination */}
           <div className="mt-8 flex justify-center">
             <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-              <a
-                href="#"
-                className="relative inline-flex items-center px-1.5 py-1.5 rounded-l-md border border-gray-300 bg-white text-xs font-medium text-gray-500 hover:bg-gray-50"
+              <button
+                type="button"
+                onClick={() => console.log('Previous page clicked')}
+                className="relative inline-flex items-center px-1.5 py-1.5 rounded-l-md border border-gray-300 bg-white text-xs font-medium text-gray-500 hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
               >
                 <span className="sr-only">Trang trước</span>
                 <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                   <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
                 </svg>
-              </a>
-              <a
-                href="#"
+              </button>
+              <button
+                type="button"
+                onClick={() => console.log('Page 1 clicked')}
                 aria-current="page"
-                className="z-10 bg-blue-50 border-blue-500 text-blue-600 relative inline-flex items-center px-3 py-1.5 border text-xs font-medium"
+                className="z-10 bg-blue-50 border-blue-500 text-blue-600 relative inline-flex items-center px-3 py-1.5 border text-xs font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
               >
                 1
-              </a>
-              <a
-                href="#"
-                className="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-3 py-1.5 border text-xs font-medium"
+              </button>
+              <button
+                type="button"
+                onClick={() => console.log('Page 2 clicked')}
+                className="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-3 py-1.5 border text-xs font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
               >
                 2
-              </a>
-              <a
-                href="#"
-                className="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-3 py-1.5 border text-xs font-medium"
+              </button>
+              <button
+                type="button"
+                onClick={() => console.log('Page 3 clicked')}
+                className="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-3 py-1.5 border text-xs font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
               >
                 3
-              </a>
-              <a
-                href="#"
-                className="relative inline-flex items-center px-1.5 py-1.5 rounded-r-md border border-gray-300 bg-white text-xs font-medium text-gray-500 hover:bg-gray-50"
+              </button>
+              <button
+                type="button"
+                onClick={() => console.log('Next page clicked')}
+                className="relative inline-flex items-center px-1.5 py-1.5 rounded-r-md border border-gray-300 bg-white text-xs font-medium text-gray-500 hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
               >
                 <span className="sr-only">Trang sau</span>
                 <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                   <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
                 </svg>
-              </a>
+              </button>
             </nav>
           </div>
         </>

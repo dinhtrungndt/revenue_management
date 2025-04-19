@@ -1,45 +1,35 @@
-import React, { useState, useEffect } from 'react';
+import React, {useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FaShoppingBag, FaBoxOpen, FaTruck, FaCheck, FaTimes, FaExclamationTriangle, FaMoneyBill, FaCreditCard, FaSync } from 'react-icons/fa';
-import { OrderService } from '../../services/apiService';
+import { FaExclamationTriangle, FaMoneyBill, FaCreditCard, FaSync } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContext';
-import { APP_CONFIG } from '../../config';
+import { fetchUserOrders } from '../../stores/redux/actions/adminActions.js';
+import { useDispatch, useSelector } from 'react-redux';
 
 const OrderHistoryPage = () => {
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const dispatch = useDispatch();
   const { isAuthenticated } = useAuth();
-
-  // Tách hàm fetchOrders ra ngoài để có thể gọi lại
-  const fetchOrders = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const data = await OrderService.getUserOrders();
-      console.log('Fetched orders:', data);
-      setOrders(data);
-    } catch (err) {
-      console.error('Error fetching orders:', err);
-      setError('Không thể tải lịch sử đơn hàng. Vui lòng thử lại sau.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { orders, loading, error } = useSelector((state) => state.adminReducer);
 
   // Fetch user orders
   useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        await dispatch(fetchUserOrders());
+      } catch (err) {
+        console.error('Error fetching orders:', err);
+      }
+    };
+
     if (isAuthenticated) {
       fetchOrders();
-    } else {
-      setLoading(false);
     }
-  }, [isAuthenticated]);
+  }, [dispatch, isAuthenticated]);
 
   // Hàm làm mới danh sách đơn hàng
   const handleRefresh = () => {
-    fetchOrders();
+    if (isAuthenticated) {
+      dispatch(fetchUserOrders());
+    }
   };
 
   // Format price as VND
@@ -57,42 +47,6 @@ const OrderHistoryPage = () => {
       minute: '2-digit',
     };
     return new Date(dateString).toLocaleDateString('vi-VN', options);
-  };
-
-  // Get status icon
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'Đã đặt hàng':
-        return <FaShoppingBag className="text-blue-500" />;
-      case 'Đang xử lý':
-        return <FaBoxOpen className="text-yellow-500" />;
-      case 'Đang giao hàng':
-        return <FaTruck className="text-purple-500" />;
-      case 'Đã giao hàng':
-        return <FaCheck className="text-green-500" />;
-      case 'Đã hủy':
-        return <FaTimes className="text-red-500" />;
-      default:
-        return <FaShoppingBag className="text-gray-500" />;
-    }
-  };
-
-  // Get status color
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'Đã đặt hàng':
-        return 'bg-blue-100 text-blue-800';
-      case 'Đang xử lý':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'Đang giao hàng':
-        return 'bg-purple-100 text-purple-800';
-      case 'Đã giao hàng':
-        return 'bg-green-100 text-green-800';
-      case 'Đã hủy':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
   };
 
   // Get payment method icon and label
@@ -117,12 +71,6 @@ const OrderHistoryPage = () => {
           className: 'bg-gray-100 text-gray-700'
         };
     }
-  };
-
-  // Lấy nhãn danh mục dựa vào giá trị
-  const getCategoryLabel = (categoryValue) => {
-    const category = APP_CONFIG.PRODUCT_CATEGORIES.find(c => c.value === categoryValue);
-    return category ? category.label : categoryValue;
   };
 
   if (!isAuthenticated) {
