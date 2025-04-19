@@ -18,7 +18,8 @@ const Login = () => {
   // Redirect nếu đã đăng nhập
   useEffect(() => {
     if (isAuthenticated) {
-      const from = location.state?.from?.pathname || '/';
+      // const from = location.state?.from?.pathname || '/';
+      const from = '/'
       navigate(from, { replace: true });
     }
   }, [isAuthenticated, navigate, location]);
@@ -44,7 +45,7 @@ const Login = () => {
 
       // Chuyển hướng đến trang trước đó hoặc trang chủ
       // const from = location.state?.from?.pathname || '/';
-      const from = '/products'
+      const from = '/'
       navigate(from, { replace: true });
     } catch (error) {
       setError(error.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.');

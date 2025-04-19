@@ -3,7 +3,6 @@ const API_CONFIG = {
     // BASE_URL: 'http://192.168.1.23:8080',
     // Timeout request (ms)
     TIMEOUT: 30000,
-    // Headers mặc định
     HEADERS: {
       'Content-Type': 'application/json',
       'Accept': 'application/json'
