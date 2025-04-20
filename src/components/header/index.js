@@ -61,7 +61,9 @@ export const HeaderPage = () => {
       if (path === '/admin/inventory') return 'Quản Lý Kho';
       if (path === '/admin/export') return 'Báo Cáo Xuất Kho';
       if (path === '/admin/revenue') return 'Báo Cáo Doanh Thu';
+      if (path === '/admin/expense-report') return 'Báo Cáo Chi Phí';
       if (path === '/admin/list-products') return 'Sản phẩm';
+      if (path === '/admin/costs-mana') return 'Chi phí quản lý';
     }
 
     // Staff routes

@@ -30,6 +30,8 @@ import AdminLayout from './components/layouts/AdminLayout';
 import StaffLayout from './components/layouts/StaffLayout';
 import MainLayout from './components/layouts/MainLayout.js';
 import { useAuth } from './contexts/AuthContext.js';
+import CostsMana from './pages/admin/costsMana/index.js';
+import ExpenseReport from './pages/admin/ExpenseReport/index.js';
 
 const RoleBasedRedirect = () => {
   const { user } = useAuth();
@@ -94,6 +96,8 @@ function App() {
               <Route path="revenue" element={<RevenueReport />} />
               <Route path="list-products" element={<AdminProductsPage />} />
               <Route path="add-products" element={<AddProducts />} />
+              <Route path="expense-report" element={<ExpenseReport />} />
+              <Route path="costs-mana" element={<CostsMana />} />
               <Route path="edit-product/:id" element={<EditProductPage />} />
               <Route path="product/:id" element={<ProductDetailDialogAdmin />} />
             </Route>

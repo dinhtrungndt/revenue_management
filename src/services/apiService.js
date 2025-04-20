@@ -274,3 +274,103 @@ export const ReportService = {
     }
   }
 };
+
+export const ExpenseService = {
+  // Tạo chi phí mới
+  createExpense: async (expenseData) => {
+    try {
+      const response = await apiClient.post('/api/expenses', expenseData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Lấy danh sách chi phí
+  getExpenses: async (params = {}) => {
+    try {
+      const response = await apiClient.get('/api/expenses', { params });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Lấy chi tiết chi phí theo ID
+  getExpenseById: async (id) => {
+    try {
+      const response = await apiClient.get(`/api/expenses/${id}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Cập nhật chi phí
+  updateExpense: async (id, expenseData) => {
+    try {
+      const response = await apiClient.put(`/api/expenses/${id}`, expenseData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Ẩn chi phí (xóa mềm)
+  hideExpense: async (id) => {
+    try {
+      const response = await apiClient.put(`/api/expenses/${id}/hide`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Khôi phục chi phí đã ẩn
+  restoreExpense: async (id) => {
+    try {
+      const response = await apiClient.put(`/api/expenses/${id}/restore`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Xóa vĩnh viễn chi phí
+  deleteExpense: async (id) => {
+    try {
+      const response = await apiClient.delete(`/api/expenses/${id}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Lấy báo cáo chi phí
+  getExpenseReport: async (params = {}) => {
+    try {
+      const response = await apiClient.get('/api/reports/expenses', { params });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Lấy danh sách chi phí đã ẩn
+  getHiddenExpenses: async () => {
+    try {
+      const response = await apiClient.get('/api/expenses/hidden');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  }
+};

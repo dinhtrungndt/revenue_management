@@ -7,6 +7,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { MdOutlineProductionQuantityLimits } from 'react-icons/md';
 import { IoReturnUpBack } from 'react-icons/io5';
+import { FaMoneyBillTrendUp } from 'react-icons/fa6';
 
 const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -75,6 +76,15 @@ const AdminLayout = () => {
                 Báo Cáo Doanh Thu
               </Link>
               <Link
+                to="/admin/expense-report"
+                className={`flex items-center px-4 py-2 text-sm font-medium rounded-md ${
+                  isActive('/admin/expense-report') ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700'
+                }`}
+              >
+                <FaChartLine className="mr-3 h-4 w-4" />
+                Báo Cáo Chi Phí
+              </Link>
+              <Link
                 to="/admin/list-products"
                 className={`flex items-center px-4 py-2 text-sm font-medium rounded-md ${
                   isActive('/admin/list-products') ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700'
@@ -82,6 +92,15 @@ const AdminLayout = () => {
               >
                 <MdOutlineProductionQuantityLimits className="mr-3 h-4 w-4" />
                 Sản phẩm
+              </Link>
+              <Link
+                to="/admin/costs-mana"
+                className={`flex items-center px-4 py-2 text-sm font-medium rounded-md ${
+                  isActive('/admin/costs-mana') ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700'
+                }`}
+              >
+                <FaMoneyBillTrendUp className="mr-3 h-4 w-4" />
+                Chi phí quản lý
               </Link>
               <Link
                 to="/products"
@@ -163,6 +182,15 @@ const AdminLayout = () => {
                   <FaChartLine className="mr-3 h-4 w-4" />
                   Báo Cáo Doanh Thu
                 </Link>
+              <Link
+                to="/admin/expense-report"
+                className={`flex items-center px-4 py-2 text-sm font-medium rounded-md ${
+                  isActive('/admin/expense-report') ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700'
+                }`}
+              >
+                <FaChartLine className="mr-3 h-4 w-4" />
+                Báo Cáo Chi Phí
+              </Link>
                 <Link
                   to="/admin/list-products"
                   className={`flex items-center px-4 py-2 text-sm font-medium rounded-md ${
@@ -173,6 +201,15 @@ const AdminLayout = () => {
                   <MdOutlineProductionQuantityLimits className="mr-3 h-4 w-4" />
                   Sản phẩm
                 </Link>
+              <Link
+                to="/admin/costs-mana"
+                className={`flex items-center px-4 py-2 text-sm font-medium rounded-md ${
+                  isActive('/admin/costs-mana') ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700'
+                }`}
+              >
+                <FaMoneyBillTrendUp className="mr-3 h-4 w-4" />
+                Chi phí quản lý
+              </Link>
               <Link
                 to="/products"
                 className={`flex items-center px-4 py-2 text-sm font-medium rounded-md ${
@@ -206,7 +243,7 @@ const AdminLayout = () => {
           </button>
           <div className="flex-1 px-4 flex justify-between">
             <div className="flex-1 flex items-center">
-              <h1 className="text-lg font-semibold">{location.pathname === '/admin' ? 'Dashboard' : location.pathname.includes('inventory') ? 'Báo Cáo Hàng Tồn Kho' : location.pathname.includes('export') ? 'Báo Cáo Hàng Xuất Kho' : location.pathname.includes('revenue') ? 'Báo Cáo Doanh Thu' : location.pathname.includes('list-products') ? 'Sản Phẩm' : ''}</h1>
+              <h1 className="text-lg font-semibold">{location.pathname === '/admin' ? 'Dashboard' : location.pathname.includes('inventory') ? 'Báo Cáo Hàng Tồn Kho' : location.pathname.includes('export') ? 'Báo Cáo Hàng Xuất Kho' : location.pathname.includes('revenue') ? 'Báo Cáo Doanh Thu' : location.pathname.includes('list-products') ? 'Sản Phẩm' : location.pathname.includes('costs-mana') ? 'Chi Phí Quản Lý' : location.pathname.includes('expense-report') ? 'Báo Cáo Chi Phí' : ''}</h1>
             </div>
             <div className="ml-4 flex items-center md:ml-6">
               <div className="flex items-center">
