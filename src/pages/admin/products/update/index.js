@@ -147,7 +147,6 @@ const EditProductDialog = ({ productId, onClose, onProductUpdated }) => {
         if (onProductUpdated) onProductUpdated();
         onClose();
       }, 1500);
-
     } catch (err) {
       console.error('Error updating product:', err);
       setError(err.response?.data?.message || 'Đã xảy ra lỗi khi cập nhật sản phẩm');

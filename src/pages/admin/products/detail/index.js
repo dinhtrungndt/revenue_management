@@ -238,26 +238,6 @@ const ProductDetailDialogAdmin = ({ productId, onClose, onProductHidden }) => {
                           </div>
                         </div>
                       )}
-
-                      <div className="flex items-start">
-                        <FaCalendarAlt className="h-3 w-3 text-gray-500 mt-0.5 mr-1" />
-                        <div>
-                          <p className="text-gray-600">Ngày tạo:</p>
-                          <p className="font-medium">{formatDate(product.createdAt)}</p>
-                        </div>
-                      </div>
-
-                      {/* Hiển thị thời gian cập nhật nếu có */}
-                      {product.updatedAt && (
-                        <div className="flex items-start">
-                          <FaHistory className="h-3 w-3 text-gray-500 mt-0.5 mr-1" />
-                          <div>
-                            <p className="text-gray-600">Cập nhật:</p>
-                            <p className="font-medium">{formatDate(product.updatedAt)}</p>
-                          </div>
-                        </div>
-                      )}
-
                       {product.featured && (
                         <div className="flex items-center col-span-2">
                           <FaStar className="h-3 w-3 text-yellow-500 mr-1" />

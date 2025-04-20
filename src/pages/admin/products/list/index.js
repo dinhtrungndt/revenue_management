@@ -156,7 +156,6 @@ const AdminProductsPage = () => {
 
   // Xử lý hoàn thành chỉnh sửa sản phẩm
   const handleProductUpdated = () => {
-    // Cập nhật lại danh sách sản phẩm sau khi chỉnh sửa
     dispatch(fetchProducts({
       category: selectedCategory !== 'all' ? selectedCategory : undefined,
       search: searchTerm || undefined,
@@ -278,22 +277,6 @@ const AdminProductsPage = () => {
   const toggleActionMenu = (productId, e) => {
     e.stopPropagation();
     setActiveActionMenu(activeActionMenu === productId ? null : productId);
-  };
-
-  // Hiển thị cập nhật thời gian cuối cùng nếu có
-  const renderUpdatedTime = (product) => {
-    if (!product.updatedAt) return null;
-
-    const updatedDate = new Date(product.updatedAt);
-    const formattedDate = updatedDate.toLocaleDateString('vi-VN');
-
-    return (
-      <div className="mt-1">
-        <span className="text-xs italic text-gray-500">
-          Cập nhật: {formattedDate}
-        </span>
-      </div>
-    );
   };
 
   return (
@@ -574,7 +557,6 @@ const AdminProductsPage = () => {
                           </>
                         )}
                       </div>
-                      {renderUpdatedTime(product)}
                     </div>
 
                     {/* Menu thao tác */}
