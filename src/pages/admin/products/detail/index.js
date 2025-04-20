@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   FaTimes,
   FaEdit,
@@ -16,15 +15,19 @@ import {
 } from 'react-icons/fa';
 import { ProductService } from '../../../../services/apiService';
 import { APP_CONFIG } from '../../../../config';
+import { MdDelete } from 'react-icons/md';
+import EditProductDialog from '../update/index.js';
+import { useDispatch } from 'react-redux';
+import { fetchProductById, fetchProducts } from '../../../../stores/redux/actions/adminActions.js.js';
 
 const ProductDetailDialogAdmin = ({ productId, onClose, onProductHidden }) => {
-  const navigate = useNavigate();
-
+  const dispatch = useDispatch();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [confirmHide, setConfirmHide] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
 
   // Lấy thông tin chi tiết sản phẩm
   useEffect(() => {
@@ -76,9 +79,34 @@ const ProductDetailDialogAdmin = ({ productId, onClose, onProductHidden }) => {
     }
   };
 
-  // Chuyển đến trang chỉnh sửa
+  // Mở dialog chỉnh sửa
   const handleEdit = () => {
-    navigate(`/admin/edit-product/${productId}`);
+    setShowEditDialog(true);
+  };
+
+  // Đóng dialog chỉnh sửa
+  const handleCloseEditDialog = () => {
+    setShowEditDialog(false);
+  };
+
+  // Xử lý khi sản phẩm được cập nhật
+  const handleProductUpdated = async () => {
+    try {
+      dispatch(fetchProducts({
+        page: 1,
+        limit: 10,
+        sort: 'createdAt_desc',
+        filter: {
+          category: 'all',
+          search: ''
+        }
+      }));
+      setShowEditDialog(false);
+      onClose();
+    } catch (err) {
+      console.error('Error refreshing product details:', err);
+      setError('Không thể làm mới thông tin sản phẩm.');
+    }
   };
 
   // Format giá tiền
@@ -269,7 +297,7 @@ const ProductDetailDialogAdmin = ({ productId, onClose, onProductHidden }) => {
                     {isProcessing ? (
                       <FaSpinner className="animate-spin mr-1 h-3.5 w-3.5" />
                     ) : (
-                      <FaEyeSlash className="mr-1 h-3.5 w-3.5" />
+                      <MdDelete className="mr-1 h-3.5 w-3.5" />
                     )}
                     {confirmHide ? 'Xác nhận xóa?' : 'Xóa sản phẩm'}
                   </button>
@@ -279,6 +307,15 @@ const ProductDetailDialogAdmin = ({ productId, onClose, onProductHidden }) => {
           </div>
         </div>
       </div>
+
+      {/* Dialog chỉnh sửa sản phẩm */}
+      {showEditDialog && (
+        <EditProductDialog
+          productId={productId}
+          onClose={handleCloseEditDialog}
+          onProductUpdated={handleProductUpdated}
+        />
+      )}
     </div>
   );
 };

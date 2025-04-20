@@ -23,6 +23,7 @@ import { APP_CONFIG } from '../../../../config/index.js';
 import { useAuth } from '../../../../contexts/AuthContext.js';
 import { ProductService } from '../../../../services/apiService';
 import ProductDetailDialogAdmin from '../detail/index.js';
+import EditProductDialog from '../update/index.js';
 
 const AdminProductsPage = () => {
   const navigate = useNavigate();
@@ -46,6 +47,10 @@ const AdminProductsPage = () => {
   // State cho dialog chi tiết sản phẩm
   const [showProductDetail, setShowProductDetail] = useState(false);
   const [selectedProductId, setSelectedProductId] = useState(null);
+
+  // State cho dialog chỉnh sửa sản phẩm
+  const [showEditProduct, setShowEditProduct] = useState(false);
+  const [editProductId, setEditProductId] = useState(null);
 
   // Lấy dữ liệu từ Redux store
   const { products = [], loading = false, error = null } = useSelector((state) => {
@@ -129,14 +134,41 @@ const AdminProductsPage = () => {
     setActiveActionMenu(null); // Đóng menu hành động
   };
 
+  // Xử lý chỉnh sửa sản phẩm
+  const handleEditProduct = (productId, e) => {
+    e.stopPropagation();
+    setEditProductId(productId);
+    setShowEditProduct(true);
+    setActiveActionMenu(null); // Đóng menu hành động
+  };
+
   // Xử lý đóng dialog chi tiết sản phẩm
   const handleCloseProductDetail = () => {
     setShowProductDetail(false);
     setSelectedProductId(null);
   };
 
+  // Xử lý đóng dialog chỉnh sửa sản phẩm
+  const handleCloseEditProduct = () => {
+    setShowEditProduct(false);
+    setEditProductId(null);
+  };
+
+  // Xử lý hoàn thành chỉnh sửa sản phẩm
+  const handleProductUpdated = () => {
+    // Cập nhật lại danh sách sản phẩm sau khi chỉnh sửa
+    dispatch(fetchProducts({
+      category: selectedCategory !== 'all' ? selectedCategory : undefined,
+      search: searchTerm || undefined,
+      sort: sortField,
+      order: sortOrder
+    }));
+    setShowEditProduct(false);
+    setEditProductId(null);
+  };
+
   // Xử lý sản phẩm bị ẩn
-  const handleProductHidden = (productId) => {
+  const handleProductHidden = () => {
     // Cập nhật lại danh sách sản phẩm sau khi ẩn
     dispatch(fetchProducts({
       category: selectedCategory !== 'all' ? selectedCategory : undefined,
@@ -489,7 +521,7 @@ const AdminProductsPage = () => {
                 <div
                   key={product._id}
                   className="bg-white rounded-lg shadow overflow-hidden"
-                  onClick={() => navigate(`/admin/edit-product/${product._id}`)}
+                  onClick={(e) => handleEditProduct(product._id, e)} // Mở dialog chỉnh sửa khi nhấp vào sản phẩm
                 >
                   <div className="flex p-3 items-center">
                     {/* Hình ảnh */}
@@ -564,10 +596,7 @@ const AdminProductsPage = () => {
                             Xem
                           </button>
                           <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`/admin/edit-product/${product._id}`);
-                            }}
+                            onClick={(e) => handleEditProduct(product._id, e)}
                             className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center"
                           >
                             <FaEdit className="mr-2 text-indigo-500" />
@@ -651,6 +680,16 @@ const AdminProductsPage = () => {
           onProductHidden={handleProductHidden}
         />
       )}
+
+      {/* Dialog chỉnh sửa sản phẩm */}
+      {showEditProduct && editProductId && (
+        <EditProductDialog
+          productId={editProductId}
+          onClose={handleCloseEditProduct}
+          onProductUpdated={handleProductUpdated}
+        />
+      )}
+
     </div>
   );
 };

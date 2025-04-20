@@ -6,6 +6,7 @@ import {
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContext';
 import { MdOutlineProductionQuantityLimits } from 'react-icons/md';
+import { IoReturnUpBack } from 'react-icons/io5';
 
 const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -81,6 +82,15 @@ const AdminLayout = () => {
               >
                 <MdOutlineProductionQuantityLimits className="mr-3 h-4 w-4" />
                 Sản phẩm
+              </Link>
+              <Link
+                to="/products"
+                className={`flex items-center px-4 py-2 text-sm font-medium rounded-md ${
+                  isActive('/products') ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700'
+                }`}
+              >
+                <IoReturnUpBack className="mr-3 h-4 w-4" />
+                Quay về
               </Link>
               <button
                 onClick={handleLogout}
@@ -163,6 +173,15 @@ const AdminLayout = () => {
                   <MdOutlineProductionQuantityLimits className="mr-3 h-4 w-4" />
                   Sản phẩm
                 </Link>
+              <Link
+                to="/products"
+                className={`flex items-center px-4 py-2 text-sm font-medium rounded-md ${
+                  isActive('/products') ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700'
+                }`}
+              >
+                <IoReturnUpBack className="mr-3 h-4 w-4" />
+                Quay về
+              </Link>
                 <button
                   onClick={handleLogout}
                   className="w-full flex items-center px-4 py-2 mt-5 text-sm font-medium text-gray-300 rounded-md hover:bg-gray-700"

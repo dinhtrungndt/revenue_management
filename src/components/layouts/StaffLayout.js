@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { FaBars, FaBoxes, FaSignOutAlt, FaUser, FaTimes } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContext';
+import { MdOutlineProductionQuantityLimits } from 'react-icons/md';
+import { IoReturnUpBack } from 'react-icons/io5';
 
 const StaffLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -35,12 +37,19 @@ const StaffLayout = () => {
             <nav className="flex-1 px-2 py-4 space-y-1">
               <Link
                 to="/staff"
-                className={`flex items-center px-4 py-2 text-sm font-medium rounded-md ${
-                  isActive('/staff') ? 'bg-blue-900 text-white' : 'text-blue-100 hover:bg-blue-700'
-                }`}
+                className={`flex items-center px-4 py-2 text-sm font-medium rounded-md ${isActive('/staff') ? 'bg-blue-900 text-white' : 'text-blue-100 hover:bg-blue-700'
+                  }`}
               >
                 <FaBoxes className="mr-3 h-4 w-4" />
                 Hàng Tồn Kho
+              </Link>
+              <Link
+                to="/products"
+                className={`flex items-center px-4 py-2 text-sm font-medium rounded-md ${isActive('/products') ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700'
+                  }`}
+              >
+                <IoReturnUpBack className="mr-3 h-4 w-4" />
+                Quay về
               </Link>
               <button
                 onClick={handleLogout}
@@ -75,13 +84,20 @@ const StaffLayout = () => {
               <nav className="mt-5 px-2 space-y-1">
                 <Link
                   to="/staff"
-                  className={`flex items-center px-4 py-2 text-sm font-medium rounded-md ${
-                    isActive('/staff') ? 'bg-blue-900 text-white' : 'text-blue-100 hover:bg-blue-700'
-                  }`}
+                  className={`flex items-center px-4 py-2 text-sm font-medium rounded-md ${isActive('/staff') ? 'bg-blue-900 text-white' : 'text-blue-100 hover:bg-blue-700'
+                    }`}
                   onClick={toggleSidebar}
                 >
                   <FaBoxes className="mr-3 h-4 w-4" />
                   Hàng Tồn Kho
+                </Link>
+                <Link
+                  to="/products"
+                  className={`flex items-center px-4 py-2 text-sm font-medium rounded-md ${isActive('/products') ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700'
+                    }`}
+                >
+                  <IoReturnUpBack className="mr-3 h-4 w-4" />
+                  Quay về
                 </Link>
                 <button
                   onClick={handleLogout}

@@ -87,7 +87,7 @@ const AddProducts = () => {
           image: null,
         });
         setPreviewImage(null);
-      }, 1000);
+      }, 2000);
 
     } catch (err) {
       console.error('Error creating product:', err);

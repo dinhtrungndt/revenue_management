@@ -1,20 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
 import {
   FaTimes, FaSave, FaUpload, FaSpinner, FaTag, FaLayerGroup,
   FaDollarSign, FaPencilAlt, FaWeightHanging, FaBoxOpen,
-  FaStar, FaCamera, FaArrowLeft, FaTrash
+  FaStar, FaCamera, FaTrash
 } from 'react-icons/fa';
-import { useAuth } from '../../../../contexts/AuthContext';
 import { APP_CONFIG } from '../../../../config';
 import { ProductService } from '../../../../services/apiService';
 
-const EditProductPage = () => {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuth();
-
-  // State cho form
+const EditProductDialog = ({ productId, onClose, onProductUpdated }) => {
+  // State for form
   const [formData, setFormData] = useState({
     name: '',
     category: '',
@@ -34,21 +28,14 @@ const EditProductPage = () => {
   const [success, setSuccess] = useState(false);
   const [deleteImageMode, setDeleteImageMode] = useState(false);
 
-  // Kiểm tra quyền admin
-  useEffect(() => {
-    if (!isAuthenticated || user?.role !== 'admin') {
-      navigate('/login', { state: { from: `/admin/products/edit/${id}` } });
-    }
-  }, [isAuthenticated, user, navigate, id]);
-
-  // Lấy thông tin sản phẩm để chỉnh sửa
+  // Fetch product data for editing
   useEffect(() => {
     const fetchProductData = async () => {
       try {
         setFetchLoading(true);
         setError(null);
 
-        const response = await ProductService.getProductById(id);
+        const response = await ProductService.getProductById(productId);
         const product = response;
 
         setFormData({
@@ -73,22 +60,22 @@ const EditProductPage = () => {
       }
     };
 
-    if (id) {
+    if (productId) {
       fetchProductData();
     }
-  }, [id]);
+  }, [productId]);
 
-  // Xử lý thay đổi input
+  // Handle input changes
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
 
-    // Cập nhật state khi thay đổi danh mục
+    // Update state when category changes
     if (name === 'category') {
       const isSpa = value === 'spa';
       setFormData((prev) => ({
         ...prev,
         [name]: value,
-        // Nếu chuyển sang loại spa, cập nhật các trường theo yêu cầu
+        // If switching to spa type, update fields accordingly
         weight: isSpa ? 'N/A' : prev.weight,
         stock: isSpa ? 999 : prev.stock,
       }));
@@ -100,7 +87,7 @@ const EditProductPage = () => {
     }
   };
 
-  // Xử lý chọn file ảnh
+  // Handle image selection
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -110,21 +97,21 @@ const EditProductPage = () => {
     }
   };
 
-  // Xử lý xóa ảnh
+  // Handle image removal
   const handleRemoveImage = () => {
     setDeleteImageMode(true);
     setNewImage(null);
     setPreviewImage(null);
   };
 
-  // Xử lý khôi phục ảnh
+  // Handle image restoration
   const handleRestoreImage = () => {
     setDeleteImageMode(false);
     setNewImage(null);
     setPreviewImage(originalImage);
   };
 
-  // Xử lý submit form
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -145,19 +132,20 @@ const EditProductPage = () => {
 
       data.append('featured', formData.featured);
 
-      // Xử lý ảnh
+      // Handle image
       if (newImage) {
         data.append('image', newImage);
       } else if (deleteImageMode) {
         data.append('deleteImage', true);
       }
 
-      await ProductService.updateProduct(id, data);
+      await ProductService.updateProduct(productId, data);
       setSuccess(true);
 
-      // Quay lại danh sách sản phẩm sau 1.5 giây
+      // Notify parent component and close dialog after 1.5 seconds
       setTimeout(() => {
-        navigate('/admin/list-products');
+        if (onProductUpdated) onProductUpdated();
+        onClose();
       }, 1500);
 
     } catch (err) {
@@ -176,37 +164,35 @@ const EditProductPage = () => {
     }).format(price);
   };
 
+  // Stop event propagation
+  const stopPropagation = (e) => {
+    e.stopPropagation();
+  };
+
   if (fetchLoading) {
     return (
-      <div className="flex justify-center items-center min-h-screen bg-gray-50">
-        <div className="text-center">
-          <FaSpinner className="mx-auto h-8 w-8 text-blue-600 animate-spin" />
-          <p className="mt-2 text-sm text-gray-600">Đang tải thông tin sản phẩm...</p>
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50" onClick={onClose}>
+        <div className="bg-white rounded-lg shadow-xl p-4 w-full max-w-lg mx-3" onClick={stopPropagation}>
+          <div className="text-center">
+            <FaSpinner className="mx-auto h-6 w-6 text-blue-600 animate-spin" />
+            <p className="mt-2 text-xs sm:text-sm text-gray-600">Đang tải thông tin sản phẩm...</p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-gray-100 px-4 py-6">
-      <div className="max-w-3xl mx-auto">
-        {/* Nút quay lại */}
-        <div className="mb-4">
-          <button
-            type="button"
-            onClick={() => navigate('/admin/list-products')}
-            className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            <FaArrowLeft className="mr-2 -ml-1 h-4 w-4" />
-            Quay lại danh sách
-          </button>
-        </div>
-
-        {/* Thông báo lỗi */}
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 overflow-y-auto px-2 py-2" onClick={onClose}>
+      <div
+        className="bg-white rounded-lg shadow-xl w-full max-w-lg mx-auto my-2 max-h-[90vh] overflow-y-auto"
+        onClick={stopPropagation}
+      >
+        {/* Error notification */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-lg shadow-md animate-pulse">
+          <div className="m-2 p-3 bg-red-50 border-l-4 border-red-500 rounded-lg shadow-md animate-pulse">
             <div className="flex items-start">
-              <svg className="h-5 w-5 text-red-500 mr-3 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+              <svg className="h-4 w-4 text-red-500 mr-2 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
                 <path
                   fillRule="evenodd"
                   d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
@@ -214,18 +200,18 @@ const EditProductPage = () => {
                 />
               </svg>
               <div>
-                <h3 className="text-sm font-medium text-red-800">Lỗi!</h3>
-                <p className="text-sm text-red-700 mt-1">{error}</p>
+                <h3 className="text-xs font-medium text-red-800">Lỗi!</h3>
+                <p className="text-xs text-red-700 mt-1">{error}</p>
               </div>
             </div>
           </div>
         )}
 
-        {/* Thông báo thành công */}
+        {/* Success notification */}
         {success && (
-          <div className="mb-6 p-4 bg-green-50 border-l-4 border-green-500 rounded-lg shadow-md animate-pulse">
+          <div className="m-2 p-3 bg-green-50 border-l-4 border-green-500 rounded-lg shadow-md animate-pulse">
             <div className="flex items-start">
-              <svg className="h-5 w-5 text-green-500 mr-3 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+              <svg className="h-4 w-4 text-green-500 mr-2 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
                 <path
                   fillRule="evenodd"
                   d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
@@ -233,32 +219,38 @@ const EditProductPage = () => {
                 />
               </svg>
               <div>
-                <h3 className="text-sm font-medium text-green-800">Thành công!</h3>
-                <p className="text-sm text-green-700 mt-1">Cập nhật sản phẩm thành công!</p>
+                <h3 className="text-xs font-medium text-green-800">Thành công!</h3>
+                <p className="text-xs text-green-700 mt-1">Cập nhật sản phẩm thành công!</p>
               </div>
             </div>
           </div>
         )}
 
         {/* Form */}
-        <form
-          onSubmit={handleSubmit}
-          className="bg-white shadow-xl rounded-2xl overflow-hidden"
-        >
+        <form onSubmit={handleSubmit}>
           {/* Form header */}
-          <div className="bg-blue-600 text-white p-4 flex items-center justify-center">
-            <FaPencilAlt className="mr-2 text-white text-lg" />
-            <h2 className="text-lg font-medium">Chỉnh sửa sản phẩm</h2>
+          <div className="bg-blue-600 text-white p-3 flex items-center justify-between rounded-t-lg">
+            <div className="flex items-center">
+              <FaPencilAlt className="mr-1.5 text-white text-sm sm:text-base" />
+              <h2 className="text-base sm:text-lg font-medium">Chỉnh sửa sản phẩm</h2>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-white hover:text-gray-200 focus:outline-none p-1"
+            >
+              <FaTimes className="text-sm sm:text-base" />
+            </button>
           </div>
 
-          <div className="p-5 space-y-5">
+          <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
             {/* Tên sản phẩm */}
             <div className="form-group">
               <label
                 htmlFor="name"
-                className="flex items-center text-sm font-medium text-gray-700 mb-2"
+                className="flex items-center text-xs sm:text-sm font-medium text-gray-700 mb-1.5"
               >
-                <FaTag className="mr-2 text-blue-500" />
+                <FaTag className="mr-1.5 text-blue-500 text-xs" />
                 Tên sản phẩm
               </label>
               <input
@@ -267,7 +259,7 @@ const EditProductPage = () => {
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
-                className="w-full border border-gray-300 rounded-lg py-3 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-all duration-200"
+                className="w-full border border-gray-300 rounded-lg py-1.5 sm:py-2 px-2 sm:px-3 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
                 placeholder="Nhập tên sản phẩm"
                 required
               />
@@ -277,9 +269,9 @@ const EditProductPage = () => {
             <div className="form-group">
               <label
                 htmlFor="category"
-                className="flex items-center text-sm font-medium text-gray-700 mb-2"
+                className="flex items-center text-xs sm:text-sm font-medium text-gray-700 mb-1.5"
               >
-                <FaLayerGroup className="mr-2 text-blue-500" />
+                <FaLayerGroup className="mr-1.5 text-blue-500 text-xs" />
                 Danh mục
               </label>
               <div className="relative">
@@ -288,7 +280,7 @@ const EditProductPage = () => {
                   name="category"
                   value={formData.category}
                   onChange={handleInputChange}
-                  className="w-full border border-gray-300 rounded-lg py-3 px-4 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-all duration-200 appearance-none"
+                  className="w-full border border-gray-300 rounded-lg py-1.5 sm:py-2 px-2 sm:px-3 pr-8 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm appearance-none"
                   required
                 >
                   {APP_CONFIG.PRODUCT_CATEGORIES.map((category) => (
@@ -297,8 +289,8 @@ const EditProductPage = () => {
                     </option>
                   ))}
                 </select>
-                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                  <svg className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                  <svg className="h-4 w-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                   </svg>
                 </div>
@@ -309,9 +301,9 @@ const EditProductPage = () => {
             <div className="form-group">
               <label
                 htmlFor="price"
-                className="flex items-center text-sm font-medium text-gray-700 mb-2"
+                className="flex items-center text-xs sm:text-sm font-medium text-gray-700 mb-1.5"
               >
-                <FaDollarSign className="mr-2 text-blue-500" />
+                <FaDollarSign className="mr-1.5 text-blue-500 text-xs" />
                 Giá (VND)
               </label>
               <div className="relative">
@@ -322,7 +314,7 @@ const EditProductPage = () => {
                   value={formData.price}
                   onChange={handleInputChange}
                   min="0"
-                  className="w-full border border-gray-300 rounded-lg py-3 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-all duration-200"
+                  className="w-full border border-gray-300 rounded-lg py-1.5 sm:py-2 px-2 sm:px-3 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
                   placeholder="Nhập giá sản phẩm"
                   required
                 />
@@ -338,9 +330,9 @@ const EditProductPage = () => {
             <div className="form-group">
               <label
                 htmlFor="description"
-                className="flex items-center text-sm font-medium text-gray-700 mb-2"
+                className="flex items-center text-xs sm:text-sm font-medium text-gray-700 mb-1.5"
               >
-                <FaPencilAlt className="mr-2 text-blue-500" />
+                <FaPencilAlt className="mr-1.5 text-blue-500 text-xs" />
                 Mô tả
               </label>
               <textarea
@@ -349,7 +341,7 @@ const EditProductPage = () => {
                 rows="3"
                 value={formData.description}
                 onChange={handleInputChange}
-                className="w-full border border-gray-300 rounded-lg py-3 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-all duration-200 resize-none"
+                className="w-full border border-gray-300 rounded-lg py-1.5 sm:py-2 px-2 sm:px-3 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm resize-none"
                 placeholder="Mô tả chi tiết về sản phẩm"
                 required
               />
@@ -360,9 +352,9 @@ const EditProductPage = () => {
               <div className="form-group">
                 <label
                   htmlFor="weight"
-                  className="flex items-center text-sm font-medium text-gray-700 mb-2"
+                  className="flex items-center text-xs sm:text-sm font-medium text-gray-700 mb-1.5"
                 >
-                  <FaWeightHanging className="mr-2 text-blue-500" />
+                  <FaWeightHanging className="mr-1.5 text-blue-500 text-xs" />
                   Cân nặng
                 </label>
                 <input
@@ -371,7 +363,7 @@ const EditProductPage = () => {
                   name="weight"
                   value={formData.weight}
                   onChange={handleInputChange}
-                  className="w-full border border-gray-300 rounded-lg py-3 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-all duration-200"
+                  className="w-full border border-gray-300 rounded-lg py-1.5 sm:py-2 px-2 sm:px-3 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
                   placeholder="VD: 2-3kg, 300g, 1.5kg,..."
                   required
                 />
@@ -383,9 +375,9 @@ const EditProductPage = () => {
               <div className="form-group">
                 <label
                   htmlFor="stock"
-                  className="flex items-center text-sm font-medium text-gray-700 mb-2"
+                  className="flex items-center text-xs sm:text-sm font-medium text-gray-700 mb-1.5"
                 >
-                  <FaBoxOpen className="mr-2 text-blue-500" />
+                  <FaBoxOpen className="mr-1.5 text-blue-500 text-xs" />
                   Số lượng tồn kho
                 </label>
                 <input
@@ -395,7 +387,7 @@ const EditProductPage = () => {
                   value={formData.stock}
                   onChange={handleInputChange}
                   min="0"
-                  className="w-full border border-gray-300 rounded-lg py-3 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-all duration-200"
+                  className="w-full border border-gray-300 rounded-lg py-1.5 sm:py-2 px-2 sm:px-3 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
                   placeholder="Nhập số lượng tồn kho"
                   required
                 />
@@ -404,20 +396,20 @@ const EditProductPage = () => {
 
             {/* Nổi bật */}
             <div className="form-group">
-              <div className="flex items-center bg-gray-50 p-3 rounded-lg border border-gray-200">
+              <div className="flex items-center bg-gray-50 p-2 sm:p-3 rounded-lg border border-gray-200">
                 <input
                   id="featured"
                   name="featured"
                   type="checkbox"
                   checked={formData.featured}
                   onChange={handleInputChange}
-                  className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                 />
                 <label
                   htmlFor="featured"
-                  className="ml-3 flex items-center text-sm text-gray-700"
+                  className="ml-2 flex items-center text-xs sm:text-sm text-gray-700"
                 >
-                  <FaStar className="mr-2 text-yellow-500" />
+                  <FaStar className="mr-1.5 text-yellow-500 text-xs" />
                   Đánh dấu là sản phẩm nổi bật
                 </label>
               </div>
@@ -427,23 +419,23 @@ const EditProductPage = () => {
             <div className="form-group">
               <label
                 htmlFor="image"
-                className="flex items-center text-sm font-medium text-gray-700 mb-2"
+                className="flex items-center text-xs sm:text-sm font-medium text-gray-700 mb-1.5"
               >
-                <FaCamera className="mr-2 text-blue-500" />
+                <FaCamera className="mr-1.5 text-blue-500 text-xs" />
                 Hình ảnh sản phẩm
               </label>
 
               {!previewImage ? (
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-blue-500 transition-all duration-200"
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-3 text-center cursor-pointer hover:border-blue-500 transition-all"
                   onClick={() => document.getElementById('image').click()}>
-                  <FaUpload className="mx-auto h-8 w-8 text-gray-400 mb-3" />
-                  <p className="text-sm text-gray-600 mb-1">Nhấp để chọn ảnh hoặc kéo thả vào đây</p>
+                  <FaUpload className="mx-auto h-4 w-4 sm:h-5 sm:w-5 text-gray-400 mb-1.5" />
+                  <p className="text-xs sm:text-sm text-gray-600 mb-1">Nhấp để chọn ảnh hoặc kéo thả vào đây</p>
                   <p className="text-xs text-gray-500">PNG, JPG, GIF tối đa 10MB</p>
                   {deleteImageMode && originalImage && (
                     <button
                       type="button"
                       onClick={handleRestoreImage}
-                      className="mt-3 inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded-md text-blue-700 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      className="mt-2 inline-flex items-center px-2 py-1 border border-gray-300 shadow-sm text-xs font-medium rounded-md text-blue-700 bg-white hover:bg-blue-50 focus:outline-none"
                     >
                       Khôi phục ảnh cũ
                     </button>
@@ -462,9 +454,9 @@ const EditProductPage = () => {
                   <img
                     src={previewImage}
                     alt="Preview"
-                    className="w-full h-48 object-cover"
+                    className="w-full h-28 sm:h-36 object-cover"
                   />
-                  <div className="absolute bottom-0 inset-x-0 bg-black bg-opacity-60 text-white p-2 text-sm truncate">
+                  <div className="absolute bottom-0 inset-x-0 bg-black bg-opacity-60 text-white p-1.5 text-xs truncate">
                     {newImage ? newImage.name : 'Ảnh hiện tại'}
                   </div>
                   <button
@@ -472,52 +464,47 @@ const EditProductPage = () => {
                     onClick={handleRemoveImage}
                     className="absolute top-2 right-2 bg-red-600 text-white rounded-full p-1 hover:bg-red-700 transition-colors"
                   >
-                    <FaTrash size={14} />
+                    <FaTrash size={12} />
                   </button>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Nút điều khiển */}
-          <div className="bg-gray-50 px-6 py-4 flex flex-col sm:flex-row gap-3 border-t">
+          {/* Control buttons */}
+          <div className="bg-gray-50 px-3 py-2 sm:px-4 sm:py-3 flex flex-row gap-2 border-t rounded-b-lg">
             <button
               type="button"
-              onClick={() => navigate('/admin/products')}
-              className="flex-1 flex items-center justify-center px-4 py-3 rounded-lg border border-gray-300 bg-white text-gray-700 text-sm font-medium shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-all duration-200"
+              onClick={onClose}
+              className="flex-1 flex items-center justify-center px-2 py-1.5 sm:px-3 sm:py-2 rounded-lg border border-gray-300 bg-white text-gray-700 text-xs sm:text-sm font-medium shadow-sm hover:bg-gray-50 focus:outline-none"
             >
-              <FaTimes className="mr-2 h-4 w-4" />
+              <FaTimes className="mr-1.5 h-3 w-3 sm:h-4 sm:w-4" />
               Hủy bỏ
             </button>
             <button
               type="submit"
               disabled={loading}
-              className={`flex-1 flex items-center justify-center px-4 py-3 rounded-lg bg-blue-600 text-white text-sm font-medium shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-200 ${
+              className={`flex-1 flex items-center justify-center px-2 py-1.5 sm:px-3 sm:py-2 rounded-lg bg-blue-600 text-white text-xs sm:text-sm font-medium shadow-sm hover:bg-blue-700 focus:outline-none ${
                 loading ? 'opacity-70 cursor-not-allowed' : ''
               }`}
             >
               {loading ? (
                 <>
-                  <FaSpinner className="animate-spin mr-2 h-4 w-4" />
+                  <FaSpinner className="animate-spin mr-1.5 h-3 w-3 sm:h-4 sm:w-4" />
                   Đang cập nhật...
                 </>
               ) : (
                 <>
-                  <FaSave className="mr-2 h-4 w-4" />
+                  <FaSave className="mr-1.5 h-3 w-3 sm:h-4 sm:w-4" />
                   Lưu thay đổi
                 </>
               )}
             </button>
           </div>
         </form>
-
-        {/* Footer */}
-        <div className="mt-6 text-center text-gray-500 text-xs">
-          © {new Date().getFullYear()} Pet Shop Admin System
-        </div>
       </div>
     </div>
   );
 };
 
-export default EditProductPage;
+export default EditProductDialog;
