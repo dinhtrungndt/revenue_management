@@ -1,214 +1,276 @@
 import { apiClient } from './authService';
 
-// Service xử lý API sản phẩm
 export const ProductService = {
-  // Lấy danh sách sản phẩm
-  getProducts: async (params = {}) => {
+  // Lấy tất cả sản phẩm
+  getAllProducts: async (params = {}) => {
     try {
       const response = await apiClient.get('/api/products', { params });
-      return response;
+      return response.data;
     } catch (error) {
-      console.error('Error fetching products:', error);
-      throw error.response?.data || { message: 'Lỗi khi lấy dữ liệu sản phẩm' };
+      throw error;
     }
   },
 
-  // Lấy chi tiết sản phẩm
+  // Lấy sản phẩm theo ID
   getProductById: async (id) => {
     try {
       const response = await apiClient.get(`/api/products/${id}`);
-      return response;
+      return response.data;
     } catch (error) {
-      console.error(`Error fetching product ${id}:`, error);
-      throw error.response?.data || { message: 'Lỗi khi lấy chi tiết sản phẩm' };
+      throw error;
     }
   },
 
-  // Thêm sản phẩm mới (Admin only)
+  // Tạo sản phẩm mới
   createProduct: async (productData) => {
     try {
+      // FormData được sử dụng để upload file
       const response = await apiClient.post('/api/products', productData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
-      return response;
+      return response.data;
     } catch (error) {
-      console.error('Error creating product:', error);
-      throw error.response?.data || { message: 'Lỗi khi tạo sản phẩm mới' };
+      throw error;
     }
   },
 
-  // Cập nhật sản phẩm (Admin only)
+  // Tạo nhiều sản phẩm cùng lúc
+  createBulkProducts: async (productsArray) => {
+    try {
+      const response = await apiClient.post('/api/products/bulk', productsArray);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Cập nhật sản phẩm
   updateProduct: async (id, productData) => {
     try {
-      const response = await apiClient.put(`/api/products/${id}`, productData);
-      return response;
+      // FormData được sử dụng để upload file
+      const response = await apiClient.put(`/api/products/${id}`, productData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
     } catch (error) {
-      console.error(`Error updating product ${id}:`, error);
-      throw error.response?.data || { message: 'Lỗi khi cập nhật sản phẩm' };
+      throw error;
     }
   },
 
-  // Xóa sản phẩm (Admin only)
+  // Ẩn sản phẩm (thay thế xóa hoàn toàn)
+  hideProduct: async (id) => {
+    try {
+      const response = await apiClient.put(`/api/products/${id}/hide`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Khôi phục sản phẩm đã ẩn
+  restoreProduct: async (id) => {
+    try {
+      const response = await apiClient.put(`/api/products/${id}/restore`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Lấy danh sách sản phẩm đã ẩn
+  getHiddenProducts: async () => {
+    try {
+      const response = await apiClient.get('/api/products/hidden');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Xóa sản phẩm (chỉ sử dụng khi cần thiết)
   deleteProduct: async (id) => {
     try {
       const response = await apiClient.delete(`/api/products/${id}`);
-      return response;
+      return response.data;
     } catch (error) {
-      console.error(`Error deleting product ${id}:`, error);
-      throw error.response?.data || { message: 'Lỗi khi xóa sản phẩm' };
+      throw error;
+    }
+  },
+
+  // Test upload ảnh (hữu ích cho debugging)
+  testUploadImage: async (imageFile) => {
+    try {
+      const formData = new FormData();
+      formData.append('image', imageFile);
+
+      const response = await apiClient.post('/api/test-upload-image', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      throw error;
     }
   }
 };
 
-// Service xử lý API đơn hàng
 export const OrderService = {
   // Tạo đơn hàng mới
   createOrder: async (orderData) => {
     try {
       const response = await apiClient.post('/api/orders', orderData);
-      return response;
-    } catch (error) {
-      console.error('Error creating order:', error);
-      throw error.response?.data || { message: 'Lỗi khi tạo đơn hàng' };
-    }
-  },
-
-  createSpaOrder: async (orderData) => {
-    try {
-      const response = await apiClient.post('/api/orders/spa', orderData);
       return response.data;
     } catch (error) {
-      console.error('Error creating spa order:', error);
-      throw error.response?.data || { message: 'Lỗi khi tạo đơn hàng spa' };
+      throw error;
     }
   },
 
-  // Lấy danh sách đơn hàng cá nhân
+  // Tạo đơn hàng dịch vụ spa
+  createSpaOrder: async (spaOrderData) => {
+    try {
+      const response = await apiClient.post('/api/orders/spa', spaOrderData);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Lấy đơn hàng của người dùng hiện tại
   getUserOrders: async () => {
     try {
       const response = await apiClient.get('/api/orders/me');
-      return response;
+      return response.data;
     } catch (error) {
-      console.error('Error fetching user orders:', error);
-      throw error.response?.data || { message: 'Lỗi khi lấy danh sách đơn hàng' };
+      throw error;
     }
   },
 
-  // Lấy chi tiết đơn hàng
+  // Lấy chi tiết đơn hàng theo ID
   getOrderById: async (id) => {
     try {
       const response = await apiClient.get(`/api/orders/${id}`);
-      return response;
+      return response.data;
     } catch (error) {
-      console.error(`Error fetching order ${id}:`, error);
-      throw error.response?.data || { message: 'Lỗi khi lấy chi tiết đơn hàng' };
+      throw error;
     }
   },
 
-  // Lấy tất cả đơn hàng (Admin/Staff only)
+  // Lấy tất cả đơn hàng (admin/staff only)
   getAllOrders: async (params = {}) => {
     try {
       const response = await apiClient.get('/api/orders', { params });
-      return response;
+      return response.data;
     } catch (error) {
-      console.error('Error fetching all orders:', error);
-      throw error.response?.data || { message: 'Lỗi khi lấy tất cả đơn hàng' };
+      throw error;
     }
   },
 
-  // Cập nhật trạng thái đơn hàng (Admin/Staff only)
+  // Cập nhật trạng thái đơn hàng
   updateOrderStatus: async (id, status) => {
     try {
       const response = await apiClient.put(`/api/orders/${id}/status`, { status });
-      return response;
+      return response.data;
     } catch (error) {
-      console.error(`Error updating order ${id} status:`, error);
-      throw error.response?.data || { message: 'Lỗi khi cập nhật trạng thái đơn hàng' };
+      throw error;
     }
   }
 };
 
-// Service xử lý API báo cáo
-export const ReportService = {
-  // Báo cáo tổng quan Dashboard (Admin only)
-  getDashboardReport: async () => {
-    try {
-      const response = await apiClient.get('/api/reports/dashboard');
-      return response;
-    } catch (error) {
-      console.error('Error fetching dashboard report:', error);
-      throw error.response?.data || { message: 'Lỗi khi lấy báo cáo tổng quan' };
-    }
-  },
-
-  // Báo cáo tồn kho (Admin/Staff)
-  getInventoryReport: async (params = {}) => {
-    try {
-      const response = await apiClient.get('/api/reports/inventory', { params });
-      return response;
-    } catch (error) {
-      console.error('Error fetching inventory report:', error);
-      throw error.response?.data || { message: 'Lỗi khi lấy báo cáo tồn kho' };
-    }
-  },
-
-  // Báo cáo xuất kho (Admin only)
-  getExportReport: async (params = {}) => {
-    try {
-      const response = await apiClient.get('/api/reports/export', { params });
-      return response;
-    } catch (error) {
-      console.error('Error fetching export report:', error);
-      throw error.response?.data || { message: 'Lỗi khi lấy báo cáo xuất kho' };
-    }
-  },
-
-  // Báo cáo doanh thu (Admin only)
-  getRevenueReport: async (params = {}) => {
-    try {
-      const response = await apiClient.get('/api/reports/revenue', { params });
-      return response;
-    } catch (error) {
-      console.error('Error fetching revenue report:', error);
-      throw error.response?.data || { message: 'Lỗi khi lấy báo cáo doanh thu' };
-    }
-  }
-};
-
-// Service xử lý API kho hàng
 export const InventoryService = {
-  // Nhập kho (Admin only)
+  // Nhập kho
   importStock: async (importData) => {
     try {
       const response = await apiClient.post('/api/inventory/import', importData);
-      return response;
+      return response.data;
     } catch (error) {
-      console.error('Error importing stock:', error);
-      throw error.response?.data || { message: 'Lỗi khi nhập kho' };
+      throw error;
     }
   },
 
-  // Điều chỉnh tồn kho (Admin only)
+  // Điều chỉnh tồn kho
   adjustStock: async (adjustData) => {
     try {
       const response = await apiClient.post('/api/inventory/adjust', adjustData);
-      return response;
+      return response.data;
     } catch (error) {
-      console.error('Error adjusting stock:', error);
-      throw error.response?.data || { message: 'Lỗi khi điều chỉnh tồn kho' };
+      throw error;
     }
   },
 
-  // Lấy lịch sử giao dịch kho (Admin only)
+  // Lấy báo cáo tồn kho
+  getInventoryReport: async () => {
+    try {
+      const response = await apiClient.get('/api/inventory/stock');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Lấy lịch sử giao dịch kho
   getInventoryTransactions: async (params = {}) => {
     try {
       const response = await apiClient.get('/api/inventory/transactions', { params });
-      return response;
+      return response.data;
     } catch (error) {
-      console.error('Error fetching inventory transactions:', error);
-      throw error.response?.data || { message: 'Lỗi khi lấy lịch sử giao dịch kho' };
+      throw error;
+    }
+  },
+
+  // Lấy báo cáo xuất kho
+  getExportReport: async () => {
+    try {
+      const response = await apiClient.get('/api/inventory/export');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  }
+};
+
+export const ReportService = {
+  // Lấy báo cáo tổng quan dashboard
+  getDashboardReport: async () => {
+    try {
+      const response = await apiClient.get('/api/reports/dashboard');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Lấy báo cáo tồn kho
+  getInventoryReport: async (params = {}) => {
+    try {
+      const response = await apiClient.get('/api/reports/inventory', { params });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Lấy báo cáo xuất kho
+  getExportReport: async (params = {}) => {
+    try {
+      const response = await apiClient.get('/api/reports/export', { params });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Lấy báo cáo doanh thu
+  getRevenueReport: async (params = {}) => {
+    try {
+      const response = await apiClient.get('/api/reports/revenue', { params });
+      return response.data;
+    } catch (error) {
+      throw error;
     }
   }
 };

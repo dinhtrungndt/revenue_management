@@ -11,14 +11,17 @@ import ProductDetailPage from './pages/products/detail/index.js';
 import ProductsPage from './pages/products/index.js';
 import OrderHistoryPage from './pages/history/index.js';
 import AccountPage from  './pages/account/index.js';
-import ContactPage from './pages/contact/index.js';
+import ContactPage from './pages/admin/contact/index.js';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/Dashboard';
 import InventoryReport from './pages/admin/InventoryReport';
 import ExportReport from './pages/admin/ExportReport';
 import RevenueReport from './pages/admin/RevenueReport';
-import AddProducts from './pages/products/add/index.js';
+import AdminProductsPage from './pages/admin/products/list/index.js';
+import AddProducts from './pages/admin/products/add/index.js';
+import EditProductPage from './pages/admin/products/update/index.js';
+import ProductDetailDialogAdmin from './pages/admin/products/detail/index.js';
 
 // Components & Layouts
 import PrivateRoute from './components/route/PrivateRoute.js';
@@ -88,7 +91,10 @@ function App() {
               <Route path="inventory" element={<InventoryReport />} />
               <Route path="export" element={<ExportReport />} />
               <Route path="revenue" element={<RevenueReport />} />
+              <Route path="list-products" element={<AdminProductsPage />} />
               <Route path="add-products" element={<AddProducts />} />
+              <Route path="edit-product/:id" element={<EditProductPage />} />
+              <Route path="product/:id" element={<ProductDetailDialogAdmin />} />
             </Route>
           </Route>
 

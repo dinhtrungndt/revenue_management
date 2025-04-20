@@ -1,53 +1,127 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { FaTimes, FaSave, FaUpload, FaSpinner, FaTag, FaLayerGroup, FaDollarSign,
-  FaPencilAlt, FaWeightHanging, FaBoxOpen, FaStar, FaCamera, FaArrowLeft } from 'react-icons/fa';
-import { ProductService } from '../../../services/apiService';
-import { APP_CONFIG } from '../../../config';
-import { useAuth } from '../../../contexts/AuthContext';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import {
+  FaTimes, FaSave, FaUpload, FaSpinner, FaTag, FaLayerGroup,
+  FaDollarSign, FaPencilAlt, FaWeightHanging, FaBoxOpen,
+  FaStar, FaCamera, FaArrowLeft, FaTrash
+} from 'react-icons/fa';
+import { useAuth } from '../../../../contexts/AuthContext';
+import { APP_CONFIG } from '../../../../config';
+import { ProductService } from '../../../../services/apiService';
 
-const AddProducts = () => {
+const EditProductPage = () => {
+  const { id } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
 
   // State cho form
   const [formData, setFormData] = useState({
     name: '',
-    category: 'dog',
+    category: '',
     price: '',
     description: '',
     weight: '',
     stock: '',
     featured: false,
-    image: null,
   });
+
+  const [originalImage, setOriginalImage] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
+  const [newImage, setNewImage] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [fetchLoading, setFetchLoading] = useState(true);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  const [deleteImageMode, setDeleteImageMode] = useState(false);
 
   // Kiểm tra quyền admin
-  if (!isAuthenticated || user?.role !== 'admin') {
-    navigate('/login', { state: { from: '/admin/add-products' } });
-    return null;
-  }
+  useEffect(() => {
+    if (!isAuthenticated || user?.role !== 'admin') {
+      navigate('/login', { state: { from: `/admin/products/edit/${id}` } });
+    }
+  }, [isAuthenticated, user, navigate, id]);
+
+  // Lấy thông tin sản phẩm để chỉnh sửa
+  useEffect(() => {
+    const fetchProductData = async () => {
+      try {
+        setFetchLoading(true);
+        setError(null);
+
+        const response = await ProductService.getProductById(id);
+        const product = response;
+
+        setFormData({
+          name: product.name || '',
+          category: product.category || 'dog',
+          price: product.price || '',
+          description: product.description || '',
+          weight: product.weight || '',
+          stock: product.stock || '',
+          featured: product.featured || false,
+        });
+
+        if (product.image) {
+          setOriginalImage(product.image);
+          setPreviewImage(product.image);
+        }
+      } catch (err) {
+        console.error('Error fetching product:', err);
+        setError(err.response?.data?.message || 'Không thể tải thông tin sản phẩm');
+      } finally {
+        setFetchLoading(false);
+      }
+    };
+
+    if (id) {
+      fetchProductData();
+    }
+  }, [id]);
 
   // Xử lý thay đổi input
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
+
+    // Cập nhật state khi thay đổi danh mục
+    if (name === 'category') {
+      const isSpa = value === 'spa';
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+        // Nếu chuyển sang loại spa, cập nhật các trường theo yêu cầu
+        weight: isSpa ? 'N/A' : prev.weight,
+        stock: isSpa ? 999 : prev.stock,
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value,
+      }));
+    }
   };
 
   // Xử lý chọn file ảnh
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setFormData((prev) => ({ ...prev, image: file }));
+      setNewImage(file);
       setPreviewImage(URL.createObjectURL(file));
+      setDeleteImageMode(false);
     }
+  };
+
+  // Xử lý xóa ảnh
+  const handleRemoveImage = () => {
+    setDeleteImageMode(true);
+    setNewImage(null);
+    setPreviewImage(null);
+  };
+
+  // Xử lý khôi phục ảnh
+  const handleRestoreImage = () => {
+    setDeleteImageMode(false);
+    setNewImage(null);
+    setPreviewImage(originalImage);
   };
 
   // Xử lý submit form
@@ -63,48 +137,71 @@ const AddProducts = () => {
       data.append('category', formData.category);
       data.append('price', parseFloat(formData.price));
       data.append('description', formData.description);
+
       if (formData.category !== 'spa') {
         data.append('weight', formData.weight);
         data.append('stock', parseInt(formData.stock));
       }
+
       data.append('featured', formData.featured);
-      if (formData.image) {
-        data.append('image', formData.image);
+
+      // Xử lý ảnh
+      if (newImage) {
+        data.append('image', newImage);
+      } else if (deleteImageMode) {
+        data.append('deleteImage', true);
       }
 
-      await ProductService.createProduct(data);
+      await ProductService.updateProduct(id, data);
       setSuccess(true);
+
+      // Quay lại danh sách sản phẩm sau 1.5 giây
       setTimeout(() => {
-        setSuccess(false);
-        setFormData({
-          name: '',
-          category: 'dog',
-          price: '',
-          description: '',
-          weight: '',
-          stock: '',
-          featured: false,
-          image: null,
-        });
-        setPreviewImage(null);
-      }, 1000);
+        navigate('/admin/list-products');
+      }, 1500);
 
     } catch (err) {
-      console.error('Error creating product:', err);
-      setError(err.response?.data?.message || 'Đã xảy ra lỗi khi thêm sản phẩm');
-    } finally {
+      console.error('Error updating product:', err);
+      setError(err.response?.data?.message || 'Đã xảy ra lỗi khi cập nhật sản phẩm');
       setLoading(false);
     }
   };
 
   // Format price
   const formatPrice = (price) => {
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND',
+      minimumFractionDigits: 0
+    }).format(price);
   };
+
+  if (fetchLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-gray-50">
+        <div className="text-center">
+          <FaSpinner className="mx-auto h-8 w-8 text-blue-600 animate-spin" />
+          <p className="mt-2 text-sm text-gray-600">Đang tải thông tin sản phẩm...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-gray-100 px-4 py-6">
-      <div className="max-w-lg mx-auto">
+      <div className="max-w-3xl mx-auto">
+        {/* Nút quay lại */}
+        <div className="mb-4">
+          <button
+            type="button"
+            onClick={() => navigate('/admin/list-products')}
+            className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            <FaArrowLeft className="mr-2 -ml-1 h-4 w-4" />
+            Quay lại danh sách
+          </button>
+        </div>
+
         {/* Thông báo lỗi */}
         {error && (
           <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-lg shadow-md animate-pulse">
@@ -137,7 +234,7 @@ const AddProducts = () => {
               </svg>
               <div>
                 <h3 className="text-sm font-medium text-green-800">Thành công!</h3>
-                <p className="text-sm text-green-700 mt-1">Thêm sản phẩm thành công!</p>
+                <p className="text-sm text-green-700 mt-1">Cập nhật sản phẩm thành công!</p>
               </div>
             </div>
           </div>
@@ -150,8 +247,8 @@ const AddProducts = () => {
         >
           {/* Form header */}
           <div className="bg-blue-600 text-white p-4 flex items-center justify-center">
-            <FaTag className="mr-2 text-white text-lg" />
-            <h2 className="text-lg font-medium">Thông tin sản phẩm</h2>
+            <FaPencilAlt className="mr-2 text-white text-lg" />
+            <h2 className="text-lg font-medium">Chỉnh sửa sản phẩm</h2>
           </div>
 
           <div className="p-5 space-y-5">
@@ -342,6 +439,15 @@ const AddProducts = () => {
                   <FaUpload className="mx-auto h-8 w-8 text-gray-400 mb-3" />
                   <p className="text-sm text-gray-600 mb-1">Nhấp để chọn ảnh hoặc kéo thả vào đây</p>
                   <p className="text-xs text-gray-500">PNG, JPG, GIF tối đa 10MB</p>
+                  {deleteImageMode && originalImage && (
+                    <button
+                      type="button"
+                      onClick={handleRestoreImage}
+                      className="mt-3 inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded-md text-blue-700 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    >
+                      Khôi phục ảnh cũ
+                    </button>
+                  )}
                   <input
                     id="image"
                     name="image"
@@ -359,17 +465,14 @@ const AddProducts = () => {
                     className="w-full h-48 object-cover"
                   />
                   <div className="absolute bottom-0 inset-x-0 bg-black bg-opacity-60 text-white p-2 text-sm truncate">
-                    {formData.image?.name}
+                    {newImage ? newImage.name : 'Ảnh hiện tại'}
                   </div>
                   <button
                     type="button"
-                    onClick={() => {
-                      setPreviewImage(null);
-                      setFormData((prev) => ({ ...prev, image: null }));
-                    }}
+                    onClick={handleRemoveImage}
                     className="absolute top-2 right-2 bg-red-600 text-white rounded-full p-1 hover:bg-red-700 transition-colors"
                   >
-                    <FaTimes size={16} />
+                    <FaTrash size={14} />
                   </button>
                 </div>
               )}
@@ -396,12 +499,12 @@ const AddProducts = () => {
               {loading ? (
                 <>
                   <FaSpinner className="animate-spin mr-2 h-4 w-4" />
-                  Đang xử lý...
+                  Đang cập nhật...
                 </>
               ) : (
                 <>
                   <FaSave className="mr-2 h-4 w-4" />
-                  Lưu sản phẩm
+                  Lưu thay đổi
                 </>
               )}
             </button>
@@ -417,4 +520,4 @@ const AddProducts = () => {
   );
 };
 
-export default AddProducts;
+export default EditProductPage;

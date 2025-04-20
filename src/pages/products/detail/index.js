@@ -46,7 +46,7 @@ const ProductDetailPage = ({
             {/* Hình ảnh sản phẩm */}
             <div className="bg-gray-100 flex items-center justify-center p-2 mb-3 rounded">
               <img
-                src={selectedProduct.image}
+                src={selectedProduct.image || `https://ui-avatars.com/api/?background=EBF4FF&color=4F46E5&bold=true&name=${encodeURIComponent(selectedProduct.name)}`}
                 alt={selectedProduct.name}
                 className="object-cover h-32 w-32"
               />

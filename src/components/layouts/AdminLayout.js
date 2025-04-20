@@ -74,13 +74,13 @@ const AdminLayout = () => {
                 Báo Cáo Doanh Thu
               </Link>
               <Link
-                to="/admin/add-products"
+                to="/admin/list-products"
                 className={`flex items-center px-4 py-2 text-sm font-medium rounded-md ${
-                  isActive('/admin/add-products') ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700'
+                  isActive('/admin/list-products') ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700'
                 }`}
               >
                 <MdOutlineProductionQuantityLimits className="mr-3 h-4 w-4" />
-                Thêm sản phẩm
+                Sản phẩm
               </Link>
               <button
                 onClick={handleLogout}
@@ -154,14 +154,14 @@ const AdminLayout = () => {
                   Báo Cáo Doanh Thu
                 </Link>
                 <Link
-                  to="/admin/add-products"
+                  to="/admin/list-products"
                   className={`flex items-center px-4 py-2 text-sm font-medium rounded-md ${
-                    isActive('/admin/add-products') ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700'
+                    isActive('/admin/list-products') ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700'
                   }`}
                   onClick={toggleSidebar}
                 >
                   <MdOutlineProductionQuantityLimits className="mr-3 h-4 w-4" />
-                  Thêm sản phẩm
+                  Sản phẩm
                 </Link>
                 <button
                   onClick={handleLogout}
@@ -187,7 +187,7 @@ const AdminLayout = () => {
           </button>
           <div className="flex-1 px-4 flex justify-between">
             <div className="flex-1 flex items-center">
-              <h1 className="text-lg font-semibold">{location.pathname === '/admin' ? 'Dashboard' : location.pathname.includes('inventory') ? 'Báo Cáo Hàng Tồn Kho' : location.pathname.includes('export') ? 'Báo Cáo Hàng Xuất Kho' : location.pathname.includes('revenue') ? 'Báo Cáo Doanh Thu' : location.pathname.includes('add-products') ? 'Thêm Sản Phẩm' : ''}</h1>
+              <h1 className="text-lg font-semibold">{location.pathname === '/admin' ? 'Dashboard' : location.pathname.includes('inventory') ? 'Báo Cáo Hàng Tồn Kho' : location.pathname.includes('export') ? 'Báo Cáo Hàng Xuất Kho' : location.pathname.includes('revenue') ? 'Báo Cáo Doanh Thu' : location.pathname.includes('list-products') ? 'Sản Phẩm' : ''}</h1>
             </div>
             <div className="ml-4 flex items-center md:ml-6">
               <div className="flex items-center">

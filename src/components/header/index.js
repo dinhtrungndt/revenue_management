@@ -61,7 +61,7 @@ export const HeaderPage = () => {
       if (path === '/admin/inventory') return 'Quản Lý Kho';
       if (path === '/admin/export') return 'Báo Cáo Xuất Kho';
       if (path === '/admin/revenue') return 'Báo Cáo Doanh Thu';
-      if (path === '/admin/add-products') return 'Thêm sản phẩm';
+      if (path === '/admin/add-products') return 'Sản phẩm';
     }
 
     // Staff routes
