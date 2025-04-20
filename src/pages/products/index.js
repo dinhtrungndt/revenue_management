@@ -32,6 +32,8 @@ const ProductsPage = () => {
   const [searchTerm, setSearchTerm] = useState(initialParams.search);
   const [selectedCategory, setSelectedCategory] = useState(initialParams.category);
   const [sortOption, setSortOption] = useState(initialParams.sort);
+  const [currentPage, setCurrentPage] = useState(1); // State cho trang hiện tại
+  const [itemsPerPage] = useState(6); // Số sản phẩm mỗi trang
 
   // State for product detail modal
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -98,17 +100,20 @@ const ProductsPage = () => {
     e.preventDefault();
     const formSearchTerm = e.target.search.value.trim();
     setSearchTerm(formSearchTerm);
+    setCurrentPage(1); // Reset về trang đầu khi tìm kiếm
   };
 
   // Handle filter changes
   const handleCategoryChange = (category) => {
     setSelectedCategory(category);
+    setCurrentPage(1); // Reset về trang đầu khi thay đổi danh mục
   };
 
   // Sửa chức năng sắp xếp
   const handleSortChange = (e) => {
     const newSortOption = e.target.value;
     setSortOption(newSortOption);
+    setCurrentPage(1); // Reset về trang đầu khi thay đổi sắp xếp
   };
 
   // Mở form dịch vụ spa
@@ -125,6 +130,7 @@ const ProductsPage = () => {
     setSelectedCategory('all');
     setSearchTerm('');
     setSortOption('createdAt_desc');
+    setCurrentPage(1); // Reset trang khi xóa bộ lọc
   };
 
   // Format price as VND
@@ -219,6 +225,7 @@ const ProductsPage = () => {
     }
   };
 
+  // Sắp xếp sản phẩm
   const sortedProducts = useMemo(() => {
     if (!products.length) return [];
 
@@ -234,6 +241,12 @@ const ProductsPage = () => {
     });
   }, [products, sortOption]);
 
+  // Tính toán phân trang
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = sortedProducts.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(sortedProducts.length / itemsPerPage);
+
   return (
     <div className="max-w-7xl mx-auto px-3 py-4">
       {/* Success message */}
@@ -248,7 +261,7 @@ const ProductsPage = () => {
               </div>
               <div className="ml-3">
                 <p className="text-sm text-green-700">
-                Thêm hàng thành công! Đơn hàng của bạn đã được tạo thành công.
+                  Thêm hàng thành công! Đơn hàng của bạn đã được tạo thành công.
                 </p>
               </div>
             </div>
@@ -432,7 +445,7 @@ const ProductsPage = () => {
       {!loading && !error && products.length > 0 && (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {sortedProducts.map((product) => (
+            {currentItems.map((product) => (
               <div
                 key={product._id}
                 onClick={() => openProductModal(product)}
@@ -467,53 +480,38 @@ const ProductsPage = () => {
             ))}
           </div>
 
-          {/* Pagination */}
-          <div className="mt-6 flex justify-center">
-            <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+          {/* Phân trang đơn giản hóa giống AdminProductsPage */}
+          {totalPages > 1 && (
+            <div className="flex justify-between items-center bg-white p-3 rounded-lg shadow mt-6">
               <button
-                type="button"
-                onClick={() => console.log('Previous page clicked')}
-                className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+                className={`px-3 py-1 rounded ${
+                  currentPage === 1
+                    ? 'bg-gray-100 text-gray-400'
+                    : 'bg-blue-100 text-blue-700'
+                }`}
               >
-                <span className="sr-only">Trang trước</span>
-                <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                  <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
+                Trước
               </button>
+
+              <div className="text-sm text-gray-600">
+                Trang {currentPage}/{totalPages}
+              </div>
+
               <button
-                type="button"
-                onClick={() => console.log('Page 1 clicked')}
-                aria-current="page"
-                className="z-10 bg-blue-50 border-blue-500 text-blue-600 relative inline-flex items-center px-4 py-2 border text-sm font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                disabled={currentPage === totalPages}
+                className={`px-3 py-1 rounded ${
+                  currentPage === totalPages
+                    ? 'bg-gray-100 text-gray-400'
+                    : 'bg-blue-100 text-blue-700'
+                }`}
               >
-                1
+                Sau
               </button>
-              <button
-                type="button"
-                onClick={() => console.log('Page 2 clicked')}
-                className="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-4 py-2 border text-sm font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-              >
-                2
-              </button>
-              <button
-                type="button"
-                onClick={() => console.log('Page 3 clicked')}
-                className="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-4 py-2 border text-sm font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-              >
-                3
-              </button>
-              <button
-                type="button"
-                onClick={() => console.log('Next page clicked')}
-                className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <span className="sr-only">Trang sau</span>
-                <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                  <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                </svg>
-              </button>
-            </nav>
-          </div>
+            </div>
+          )}
         </>
       )}
 

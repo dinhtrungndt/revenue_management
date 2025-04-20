@@ -52,7 +52,7 @@ const ProductDetailDialogAdmin = ({ productId, onClose, onProductHidden }) => {
     }
   }, [productId]);
 
-  // Xử lý xóa sản phẩm
+  // Xử lý ẩn sản phẩm
   const handleHideProduct = async () => {
     if (!confirmHide) {
       setConfirmHide(true);
@@ -74,7 +74,7 @@ const ProductDetailDialogAdmin = ({ productId, onClose, onProductHidden }) => {
       onClose();
     } catch (err) {
       console.error('Error hiding product:', err);
-      setError('Không thể xóa sản phẩm. Vui lòng thử lại sau.');
+      setError('Không thể ẩn sản phẩm. Vui lòng thử lại sau.');
       setIsProcessing(false);
     }
   };
@@ -279,7 +279,7 @@ const ProductDetailDialogAdmin = ({ productId, onClose, onProductHidden }) => {
                     ) : (
                       <MdDelete className="mr-1 h-3.5 w-3.5" />
                     )}
-                    {confirmHide ? 'Xác nhận xóa?' : 'Xóa sản phẩm'}
+                    {confirmHide ? 'Xác nhận ẩn?' : 'Ẩn sản phẩm'}
                   </button>
                 </div>
               </>
