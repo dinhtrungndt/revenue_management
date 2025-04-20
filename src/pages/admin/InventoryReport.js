@@ -1,17 +1,65 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { FaSearch, FaExclamationTriangle, FaBoxOpen } from 'react-icons/fa';
+import { FaSearch, FaExclamationTriangle, FaBoxOpen, FaEye, FaEyeSlash, FaSpinner } from 'react-icons/fa';
 import { fetchInventoryReport } from '../../stores/redux/actions/adminActions.js';
+import { ProductService } from '../../services/apiService';
+import { toast } from 'react-toastify';
 
 const InventoryReport = () => {
   const dispatch = useDispatch();
   const { reports, loading, error } = useSelector((state) => state.adminReducer);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
+  const [showHiddenProducts, setShowHiddenProducts] = useState(false);
+  const [hiddenProducts, setHiddenProducts] = useState([]);
+  const [isLoadingHidden, setIsLoadingHidden] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(null);
 
   useEffect(() => {
-    dispatch(fetchInventoryReport({ category: filterCategory !== 'all' ? filterCategory : undefined }));
+    // Fetch active products
+    dispatch(fetchInventoryReport({
+      category: filterCategory !== 'all' ? filterCategory : undefined,
+      isActive: true // Chỉ lấy sản phẩm active
+    }));
   }, [dispatch, filterCategory]);
+
+  // Fetch hidden products when toggle is on
+  useEffect(() => {
+    if (showHiddenProducts) {
+      fetchHiddenProducts();
+    }
+  }, [showHiddenProducts]);
+
+  const fetchHiddenProducts = async () => {
+    try {
+      setIsLoadingHidden(true);
+      const response = await ProductService.getHiddenProducts();
+      setHiddenProducts(response || []);
+    } catch (error) {
+      console.error('Error fetching hidden products:', error);
+      toast.error('Không thể tải sản phẩm đã ẩn');
+    } finally {
+      setIsLoadingHidden(false);
+    }
+  };
+
+  const handleRestoreProduct = async (productId) => {
+    try {
+      setIsRestoring(productId);
+      await ProductService.restoreProduct(productId);
+
+      // Refresh data
+      fetchHiddenProducts();
+      dispatch(fetchInventoryReport({ category: filterCategory !== 'all' ? filterCategory : undefined }));
+
+      toast.success('Đã khôi phục sản phẩm thành công');
+    } catch (error) {
+      console.error('Error restoring product:', error);
+      toast.error('Không thể khôi phục sản phẩm');
+    } finally {
+      setIsRestoring(null);
+    }
+  };
 
   const inventoryReport = reports.inventory || {
     products: [],
@@ -24,8 +72,14 @@ const InventoryReport = () => {
     categoryStats: {},
   };
 
-  // Lọc sản phẩm theo từ khóa tìm kiếm
+  // Lọc sản phẩm theo từ khóa tìm kiếm và đảm bảo chỉ hiển thị sản phẩm KHÔNG bị ẩn
   const filteredProducts = inventoryReport.products.filter((product) =>
+    product.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
+    product.isActive !== false // Chỉ lấy sản phẩm active
+  );
+
+  // Lọc sản phẩm đã ẩn theo từ khóa tìm kiếm
+  const filteredHiddenProducts = hiddenProducts.filter((product) =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -34,7 +88,7 @@ const InventoryReport = () => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
   };
 
-  if (loading) {
+  if (loading && !showHiddenProducts) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-blue-500">
@@ -164,7 +218,7 @@ const InventoryReport = () => {
         <div className="p-4 border-b border-gray-200 flex justify-between items-center flex-wrap gap-2">
           <h2 className="text-lg font-semibold">Danh sách sản phẩm tồn kho</h2>
 
-          <div className="flex space-x-2">
+          <div className="flex flex-wrap space-x-2 items-center">
             <div className="relative">
               <input
                 type="text"
@@ -187,11 +241,121 @@ const InventoryReport = () => {
               <option value="dog">Chó</option>
               <option value="cat">Mèo</option>
             </select>
+
+            {/* Toggle button to show hidden products */}
+            <button
+              onClick={() => setShowHiddenProducts(!showHiddenProducts)}
+              className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium ${
+                showHiddenProducts
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              {showHiddenProducts ? <FaEye className="mr-1" /> : <FaEyeSlash className="mr-1" />}
+              {showHiddenProducts ? 'Đang hiện sản phẩm ẩn' : 'Hiện sản phẩm đã ẩn'}
+            </button>
           </div>
         </div>
 
         <div className="p-4">
-          <div className="overflow-x-auto">
+          {/* Mobile view - card style */}
+          <div className="block md:hidden">
+            {showHiddenProducts ? (
+              isLoadingHidden ? (
+                <div className="flex justify-center items-center py-6">
+                  <FaSpinner className="animate-spin text-blue-600 h-6 w-6" />
+                  <span className="ml-2 text-gray-600">Đang tải...</span>
+                </div>
+              ) : filteredHiddenProducts.length === 0 ? (
+                <div className="text-center py-6 text-gray-500">
+                  Không có sản phẩm đã ẩn
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {filteredHiddenProducts.map((product) => (
+                    <div key={product._id} className="bg-gray-50 border border-gray-200 p-4 rounded-lg">
+                      <div className="flex justify-between">
+                        <div>
+                          <h3 className="font-medium text-gray-900">{product.name}</h3>
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            <span className="px-1.5 py-0.5 text-xs rounded-full bg-blue-100 text-blue-800">
+                              {product.category === 'dog' ? 'Chó' : 'Mèo'}
+                            </span>
+                            <span className="px-1.5 py-0.5 text-xs rounded-full bg-red-100 text-red-800">
+                              {formatCurrency(product.price)}
+                            </span>
+                          </div>
+                          <p className="mt-1 text-sm text-gray-500">
+                            Tồn kho: <span className="font-medium">{product.stock}</span>
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            Giá trị: <span className="font-medium">{formatCurrency(product.price * product.stock)}</span>
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => handleRestoreProduct(product._id)}
+                          disabled={isRestoring === product._id}
+                          className="h-8 w-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center hover:bg-green-200"
+                        >
+                          {isRestoring === product._id ? (
+                            <FaSpinner className="animate-spin h-4 w-4" />
+                          ) : (
+                            <FaEye className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )
+            ) : (
+              <div className="space-y-4">
+                {filteredProducts.length === 0 ? (
+                  <div className="text-center py-6 text-gray-500">
+                    Không tìm thấy sản phẩm nào
+                  </div>
+                ) : (
+                  filteredProducts.map((product) => (
+                    <div key={product._id} className="bg-white border border-gray-200 p-4 rounded-lg">
+                      <h3 className="font-medium text-gray-900">{product.name}</h3>
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        <span className="px-1.5 py-0.5 text-xs rounded-full bg-blue-100 text-blue-800">
+                          {product.category === 'dog' ? 'Chó' : 'Mèo'}
+                        </span>
+                        <span className="px-1.5 py-0.5 text-xs rounded-full bg-gray-100 text-gray-800">
+                          {formatCurrency(product.price)}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-sm text-gray-500">
+                        Tồn kho: <span className="font-medium">{product.stock}</span>
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        Giá trị: <span className="font-medium">{formatCurrency(product.price * product.stock)}</span>
+                      </p>
+                      <div className="mt-2">
+                        {product.stock === 0 ? (
+                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                            Hết hàng
+                          </span>
+                        ) : product.stock < 10 ? (
+                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                            Sắp hết
+                          </span>
+                        ) : (
+                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                            Còn hàng
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Desktop view - table */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
@@ -213,10 +377,73 @@ const InventoryReport = () => {
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Trạng thái
                   </th>
+                  {showHiddenProducts && (
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Thao tác
+                    </th>
+                  )}
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredProducts.length === 0 ? (
+                {showHiddenProducts ? (
+                  isLoadingHidden ? (
+                    <tr>
+                      <td colSpan="7" className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                        <div className="flex justify-center items-center">
+                          <FaSpinner className="animate-spin text-blue-600 h-5 w-5 mr-2" />
+                          Đang tải...
+                        </div>
+                      </td>
+                    </tr>
+                  ) : filteredHiddenProducts.length === 0 ? (
+                    <tr>
+                      <td colSpan="7" className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                        Không có sản phẩm đã ẩn
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredHiddenProducts.map((product) => (
+                      <tr key={product._id} className="bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{product.name}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                            {product.category === 'dog' ? 'Chó' : 'Mèo'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {formatCurrency(product.price)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {product.stock}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {formatCurrency(product.price * product.stock)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                            Đã ẩn
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <button
+                            onClick={() => handleRestoreProduct(product._id)}
+                            disabled={isRestoring === product._id}
+                            className="text-green-600 hover:text-green-900 flex items-center"
+                          >
+                            {isRestoring === product._id ? (
+                              <FaSpinner className="animate-spin h-5 w-5 mr-1" />
+                            ) : (
+                              <FaEye className="h-5 w-5 mr-1" />
+                            )}
+                            <span>Khôi phục</span>
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )
+                ) : filteredProducts.length === 0 ? (
                   <tr>
                     <td colSpan="6" className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                       Không tìm thấy sản phẩm nào

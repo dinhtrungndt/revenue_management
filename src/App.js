@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
+import { ToastContainer, toast } from 'react-toastify';
 
 // Pages
 import Login from './pages/user/Login/index.js';
@@ -109,6 +110,7 @@ function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
+      <ToastContainer />
     </AuthProvider>
   );
 }
