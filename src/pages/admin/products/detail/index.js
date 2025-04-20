@@ -11,7 +11,8 @@ import {
   FaHistory,
   FaTag,
   FaLayerGroup,
-  FaExclamationTriangle
+  FaExclamationTriangle,
+  FaEye
 } from 'react-icons/fa';
 import { ProductService } from '../../../../services/apiService';
 import { APP_CONFIG } from '../../../../config';
@@ -19,6 +20,7 @@ import { MdDelete } from 'react-icons/md';
 import EditProductDialog from '../update/index.js';
 import { useDispatch } from 'react-redux';
 import { fetchProductById, fetchProducts } from '../../../../stores/redux/actions/adminActions.js.js';
+import { LuEyeClosed } from 'react-icons/lu';
 
 const ProductDetailDialogAdmin = ({ productId, onClose, onProductHidden }) => {
   const dispatch = useDispatch();
@@ -275,9 +277,9 @@ const ProductDetailDialogAdmin = ({ productId, onClose, onProductHidden }) => {
                     }`}
                   >
                     {isProcessing ? (
-                      <FaSpinner className="animate-spin mr-1 h-3.5 w-3.5" />
+                      <LuEyeClosed className="animate-spin mr-1 h-3.5 w-3.5" />
                     ) : (
-                      <MdDelete className="mr-1 h-3.5 w-3.5" />
+                      <FaEyeSlash className="mr-1 h-3.5 w-3.5" />
                     )}
                     {confirmHide ? 'Xác nhận ẩn?' : 'Ẩn sản phẩm'}
                   </button>
