@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaTimes, FaSave, FaUpload, FaSpinner, FaTag, FaLayerGroup, FaDollarSign,
-  FaPencilAlt, FaWeightHanging, FaBoxOpen, FaStar, FaCamera, FaArrowLeft } from 'react-icons/fa';
+  FaPencilAlt, FaWeightHanging, FaBoxOpen, FaStar, FaCamera, FaArrowLeft, FaShoppingCart } from 'react-icons/fa';
 import { ProductService } from '../../../../services/apiService';
 import { APP_CONFIG } from '../../../../config';
 import { useAuth } from '../../../../contexts/AuthContext';
@@ -14,7 +14,8 @@ const AddProducts = () => {
   const [formData, setFormData] = useState({
     name: '',
     category: 'dog',
-    price: '',
+    importPrice: '', // Giá nhập
+    price: '',       // Giá bán
     description: '',
     weight: '',
     stock: '',
@@ -61,13 +62,22 @@ const AddProducts = () => {
       const data = new FormData();
       data.append('name', formData.name);
       data.append('category', formData.category);
+
+      // Chuyển đổi giá nhập và giá bán sang số
+      data.append('importPrice', parseFloat(formData.importPrice));
       data.append('price', parseFloat(formData.price));
+
       data.append('description', formData.description);
+
       if (formData.category !== 'spa') {
         data.append('weight', formData.weight);
-        data.append('stock', parseInt(formData.stock));
+        // Đảm bảo giá trị stock là số nguyên
+        const stockValue = parseInt(formData.stock, 10);
+        data.append('stock', stockValue);
       }
+
       data.append('featured', formData.featured);
+
       if (formData.image) {
         data.append('image', formData.image);
       }
@@ -79,6 +89,7 @@ const AddProducts = () => {
         setFormData({
           name: '',
           category: 'dog',
+          importPrice: '',
           price: '',
           description: '',
           weight: '',
@@ -101,6 +112,25 @@ const AddProducts = () => {
   const formatPrice = (price) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
   };
+
+  // Tính lợi nhuận dự kiến
+  const calculateProfit = () => {
+    if (formData.importPrice && formData.price) {
+      const importPrice = parseFloat(formData.importPrice);
+      const salePrice = parseFloat(formData.price);
+      if (!isNaN(importPrice) && !isNaN(salePrice)) {
+        const profit = salePrice - importPrice;
+        const profitPercent = (profit / importPrice) * 100;
+        return {
+          amount: formatPrice(profit),
+          percent: profitPercent.toFixed(2)
+        };
+      }
+    }
+    return { amount: '-', percent: '-' };
+  };
+
+  const profit = calculateProfit();
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-gray-100 px-4 py-6">
@@ -208,14 +238,43 @@ const AddProducts = () => {
               </div>
             </div>
 
-            {/* Giá */}
+            {/* Giá nhập */}
+            <div className="form-group">
+              <label
+                htmlFor="importPrice"
+                className="flex items-center text-sm font-medium text-gray-700 mb-2"
+              >
+                <FaShoppingCart className="mr-2 text-blue-500" />
+                Giá nhập (VND)
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  id="importPrice"
+                  name="importPrice"
+                  value={formData.importPrice}
+                  onChange={handleInputChange}
+                  min="0"
+                  className="w-full border border-gray-300 rounded-lg py-3 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-all duration-200"
+                  placeholder="Nhập giá nhập sản phẩm"
+                  required
+                />
+                {formData.importPrice && (
+                  <div className="mt-1 text-right text-xs text-blue-600 font-medium">
+                    {formatPrice(formData.importPrice)}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Giá bán */}
             <div className="form-group">
               <label
                 htmlFor="price"
                 className="flex items-center text-sm font-medium text-gray-700 mb-2"
               >
                 <FaDollarSign className="mr-2 text-blue-500" />
-                Giá (VND)
+                Giá bán (VND)
               </label>
               <div className="relative">
                 <input
@@ -226,7 +285,7 @@ const AddProducts = () => {
                   onChange={handleInputChange}
                   min="0"
                   className="w-full border border-gray-300 rounded-lg py-3 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-all duration-200"
-                  placeholder="Nhập giá sản phẩm"
+                  placeholder="Nhập giá bán sản phẩm"
                   required
                 />
                 {formData.price && (
@@ -236,6 +295,21 @@ const AddProducts = () => {
                 )}
               </div>
             </div>
+
+            {/* Hiển thị lợi nhuận dự kiến */}
+            {formData.importPrice && formData.price && (
+              <div className="form-group">
+                <div className="bg-green-50 border border-green-100 rounded-lg p-3">
+                  <p className="text-sm font-medium text-green-800 mb-1">Lợi nhuận dự kiến:</p>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-green-700">{profit.amount}</span>
+                    <span className="text-sm font-medium bg-green-100 px-2 py-0.5 rounded-full text-green-800">
+                      {profit.percent}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Mô tả */}
             <div className="form-group">
@@ -298,6 +372,7 @@ const AddProducts = () => {
                   value={formData.stock}
                   onChange={handleInputChange}
                   min="0"
+                  step="1" // Đảm bảo chỉ cho phép số nguyên
                   className="w-full border border-gray-300 rounded-lg py-3 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-all duration-200"
                   placeholder="Nhập số lượng tồn kho"
                   required

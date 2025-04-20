@@ -114,6 +114,11 @@ const ProductDetailPage = ({
                     </div>
                   </div>
 
+                  {/* Hàng tồn kho */}
+                  <div className="mt-1 text-xs text-yellow-600">
+                    Còn {selectedProduct.stock} sản phẩm
+                  </div>
+
                   {/* Thành tiền */}
                   <div className="flex justify-between items-center mt-2">
                     <span className="text-xs text-gray-500">Thành tiền:</span>
@@ -153,9 +158,8 @@ const ProductDetailPage = ({
                 type="button"
                 onClick={handleBuyNow}
                 disabled={ordering || selectedProduct.stock === 0}
-                className={`w-1/2 inline-flex justify-center items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none ${
-                  ordering ? 'opacity-70 cursor-not-allowed' : ''
-                }`}
+                className={`w-1/2 inline-flex justify-center items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none ${ordering ? 'opacity-70 cursor-not-allowed' : ''
+                  }`}
               >
                 <FaShoppingCart className="mr-1.5 h-3 w-3" />
                 Mua ngay

@@ -207,7 +207,7 @@ const Dashboard = () => {
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-medium text-gray-900">{product.totalSold} sản phẩm</p>
-                      <p className="text-sm text-gray-500">{formatCurrency(product.price * product.totalSold)}</p>
+                      <p className="text-sm text-gray-500">{formatCurrency(product.totalAmount * product.totalSold)}</p>
                     </div>
                   </li>
                 ))
