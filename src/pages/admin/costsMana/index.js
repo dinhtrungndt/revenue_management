@@ -394,7 +394,7 @@ const CostsMana = () => {
         </h1>
 
         {/* Bộ chuyển đổi chế độ xem hiển thị/ẩn */}
-        <div className="flex rounded-lg overflow-hidden border border-gray-300">
+        {/* <div className="flex rounded-lg overflow-hidden border border-gray-300">
           <button
             onClick={() => toggleViewMode('active')}
             className={`flex-1 px-3 sm:px-4 py-2 text-sm font-medium flex items-center justify-center ${
@@ -417,7 +417,7 @@ const CostsMana = () => {
             <FaArchive className="mr-1 sm:mr-2" />
             <span>Đã ẩn</span>
           </button>
-        </div>
+        </div> */}
 
         {/* Nút thêm mới và bộ lọc */}
         <div className="flex flex-col sm:flex-row gap-2">
@@ -430,9 +430,8 @@ const CostsMana = () => {
           </button>
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`px-4 py-2 rounded-lg flex items-center justify-center ${
-              showFilters ? 'bg-gray-200 text-gray-700' : 'bg-gray-100 text-gray-600'
-            }`}
+            className={`px-4 py-2 rounded-lg flex items-center justify-center ${showFilters ? 'bg-gray-200 text-gray-700' : 'bg-gray-100 text-gray-600'
+              }`}
           >
             <FaFilter className="mr-1" />
             {showFilters ? 'Ẩn bộ lọc' : 'Hiện bộ lọc'}
@@ -472,7 +471,7 @@ const CostsMana = () => {
                     type="text"
                     name="search"
                     value={filters.search}
-                    onChange={(e) => setFilters({...filters, search: e.target.value})}
+                    onChange={(e) => setFilters({ ...filters, search: e.target.value })}
                     placeholder="Tìm kiếm chi phí..."
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
@@ -484,7 +483,7 @@ const CostsMana = () => {
                 <select
                   name="category"
                   value={filters.category}
-                  onChange={(e) => setFilters({...filters, category: e.target.value})}
+                  onChange={(e) => setFilters({ ...filters, category: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="all">Tất cả danh mục</option>
@@ -499,7 +498,7 @@ const CostsMana = () => {
                   type="date"
                   name="dateFrom"
                   value={filters.dateFrom}
-                  onChange={(e) => setFilters({...filters, dateFrom: e.target.value})}
+                  onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -509,7 +508,7 @@ const CostsMana = () => {
                   type="date"
                   name="dateTo"
                   value={filters.dateTo}
-                  onChange={(e) => setFilters({...filters, dateTo: e.target.value})}
+                  onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -678,11 +677,10 @@ const CostsMana = () => {
                 <button
                   onClick={() => paginate(Math.max(1, currentPage - 1))}
                   disabled={currentPage === 1}
-                  className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium ${
-                    currentPage === 1
+                  className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium ${currentPage === 1
                       ? 'text-gray-300 cursor-not-allowed'
                       : 'text-gray-500 hover:bg-gray-50'
-                  }`}
+                    }`}
                 >
                   <span className="sr-only">Trang trước</span>
                   <FaChevronLeft className="h-4 w-4" />
@@ -691,11 +689,10 @@ const CostsMana = () => {
                   <button
                     key={number + 1}
                     onClick={() => paginate(number + 1)}
-                    className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                      currentPage === number + 1
+                    className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${currentPage === number + 1
                         ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
                         : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                    }`}
+                      }`}
                   >
                     {number + 1}
                   </button>
@@ -703,11 +700,10 @@ const CostsMana = () => {
                 <button
                   onClick={() => paginate(Math.min(totalPages, currentPage + 1))}
                   disabled={currentPage === totalPages}
-                  className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium ${
-                    currentPage === totalPages
+                  className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium ${currentPage === totalPages
                       ? 'text-gray-300 cursor-not-allowed'
                       : 'text-gray-500 hover:bg-gray-50'
-                  }`}
+                    }`}
                 >
                   <span className="sr-only">Trang sau</span>
                   <FaChevronRight className="h-4 w-4" />
@@ -773,7 +769,7 @@ const CostsMana = () => {
                     )}
                   </div>
 
-                  <div className="flex space-x-3" onClick={(e) => e.stopPropagation()}>
+                  {/* <div className="flex space-x-3" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -819,7 +815,7 @@ const CostsMana = () => {
                     >
                       <FaTrashAlt size={16} />
                     </button>
-                  </div>
+                  </div> */}
                 </div>
               </div>
             ))}
@@ -832,11 +828,10 @@ const CostsMana = () => {
             <button
               onClick={() => paginate(Math.max(1, currentPage - 1))}
               disabled={currentPage === 1}
-              className={`flex items-center px-3 py-1 rounded border ${
-                currentPage === 1
+              className={`flex items-center px-3 py-1 rounded border ${currentPage === 1
                   ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
                   : 'bg-white text-gray-700 border-gray-300'
-              }`}
+                }`}
             >
               <FaChevronLeft className="h-3 w-3 mr-1" />
               <span>Trước</span>
@@ -849,11 +844,10 @@ const CostsMana = () => {
             <button
               onClick={() => paginate(Math.min(totalPages, currentPage + 1))}
               disabled={currentPage === totalPages}
-              className={`flex items-center px-3 py-1 rounded border ${
-                currentPage === totalPages
+              className={`flex items-center px-3 py-1 rounded border ${currentPage === totalPages
                   ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
                   : 'bg-white text-gray-700 border-gray-300'
-              }`}
+                }`}
             >
               <span>Sau</span>
               <FaChevronRight className="h-3 w-3 ml-1" />
@@ -861,8 +855,7 @@ const CostsMana = () => {
           </div>
         )}
       </div>
-
-      {/* Form thêm/sửa chi phí */}
+      {/*
       {showForm && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center">
@@ -889,7 +882,7 @@ const CostsMana = () => {
 
                 <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                   <div className="space-y-4">
-                    {/* Tiêu đề và Số tiền */}
+                    Tiêu đề và Số tiền
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
@@ -932,7 +925,7 @@ const CostsMana = () => {
                       </div>
                     </div>
 
-                    {/* Danh mục và Ngày */}
+                    Danh mục và Ngày
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
@@ -977,7 +970,7 @@ const CostsMana = () => {
                       </div>
                     </div>
 
-                    {/* Chi phí định kỳ */}
+                    Chi phí định kỳ
                     <div>
                       <div className="flex items-center">
                         <input
@@ -1015,7 +1008,7 @@ const CostsMana = () => {
                       )}
                     </div>
 
-                    {/* Mô tả */}
+                    Mô tả
                     <div>
                       <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
                         Mô tả
@@ -1030,13 +1023,13 @@ const CostsMana = () => {
                       ></textarea>
                     </div>
 
-                    {/* Tệp đính kèm */}
+                    Tệp đính kèm
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Tệp đính kèm
                       </label>
 
-                      {/* Hiển thị tệp đính kèm hiện có */}
+                      Hiển thị tệp đính kèm hiện có
                       {formData.attachments && formData.attachments.length > 0 && (
                         <div className="mb-2 space-y-1">
                           {formData.attachments.map((url, index) => (
@@ -1061,7 +1054,7 @@ const CostsMana = () => {
                         </div>
                       )}
 
-                      {/* Hiển thị tệp mới được chọn */}
+                      Hiển thị tệp mới được chọn
                       {attachmentFiles.length > 0 && (
                         <div className="mb-2 space-y-1">
                           {attachmentFiles.map((file, index) => (
@@ -1079,7 +1072,7 @@ const CostsMana = () => {
                         </div>
                       )}
 
-                      {/* Input để chọn tệp */}
+                      Input để chọn tệp
                       <div className="flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-4 cursor-pointer hover:border-blue-500"
                         onClick={() => document.getElementById('attachments').click()}>
                         <input
@@ -1135,6 +1128,7 @@ const CostsMana = () => {
           </div>
         </div>
       )}
+       */}
     </div>
   );
 };
