@@ -855,7 +855,7 @@ const CostsMana = () => {
           </div>
         )}
       </div>
-      {/*
+
       {showForm && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center">
@@ -882,7 +882,7 @@ const CostsMana = () => {
 
                 <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                   <div className="space-y-4">
-                    Tiêu đề và Số tiền
+                    {/* Tiêu đề và Số tiền */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
@@ -925,7 +925,7 @@ const CostsMana = () => {
                       </div>
                     </div>
 
-                    Danh mục và Ngày
+                    {/* Danh mục và Ngày */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
@@ -970,7 +970,7 @@ const CostsMana = () => {
                       </div>
                     </div>
 
-                    Chi phí định kỳ
+                    {/* Chi phí định kỳ */}
                     <div>
                       <div className="flex items-center">
                         <input
@@ -1008,7 +1008,7 @@ const CostsMana = () => {
                       )}
                     </div>
 
-                    Mô tả
+                    {/* Mô tả */}
                     <div>
                       <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
                         Mô tả
@@ -1023,13 +1023,13 @@ const CostsMana = () => {
                       ></textarea>
                     </div>
 
-                    Tệp đính kèm
+                    {/* Tệp đính kèm */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Tệp đính kèm
                       </label>
 
-                      Hiển thị tệp đính kèm hiện có
+                      {/* Hiển thị tệp đính kèm hiện có */}
                       {formData.attachments && formData.attachments.length > 0 && (
                         <div className="mb-2 space-y-1">
                           {formData.attachments.map((url, index) => (
@@ -1054,7 +1054,7 @@ const CostsMana = () => {
                         </div>
                       )}
 
-                      Hiển thị tệp mới được chọn
+                      {/* Hiển thị tệp mới được chọn */}
                       {attachmentFiles.length > 0 && (
                         <div className="mb-2 space-y-1">
                           {attachmentFiles.map((file, index) => (
@@ -1072,7 +1072,7 @@ const CostsMana = () => {
                         </div>
                       )}
 
-                      Input để chọn tệp
+                      {/* Input để chọn tệp */}
                       <div className="flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-4 cursor-pointer hover:border-blue-500"
                         onClick={() => document.getElementById('attachments').click()}>
                         <input
@@ -1128,7 +1128,7 @@ const CostsMana = () => {
           </div>
         </div>
       )}
-       */}
+
     </div>
   );
 };
