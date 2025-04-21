@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   FaTimes, FaSave, FaUpload, FaSpinner, FaTag, FaLayerGroup,
   FaDollarSign, FaPencilAlt, FaWeightHanging, FaBoxOpen,
-  FaStar, FaCamera, FaTrash
+  FaStar, FaCamera, FaTrash, FaShoppingCart
 } from 'react-icons/fa';
 import { APP_CONFIG } from '../../../../config';
 import { ProductService } from '../../../../services/apiService';
@@ -12,6 +12,7 @@ const EditProductDialog = ({ productId, onClose, onProductUpdated }) => {
   const [formData, setFormData] = useState({
     name: '',
     category: '',
+    importPrice: '', // Added importPrice
     price: '',
     description: '',
     weight: '',
@@ -41,6 +42,7 @@ const EditProductDialog = ({ productId, onClose, onProductUpdated }) => {
         setFormData({
           name: product.name || '',
           category: product.category || 'dog',
+          importPrice: product.importPrice || '', // Added importPrice
           price: product.price || '',
           description: product.description || '',
           weight: product.weight || '',
@@ -75,7 +77,6 @@ const EditProductDialog = ({ productId, onClose, onProductUpdated }) => {
       setFormData((prev) => ({
         ...prev,
         [name]: value,
-        // If switching to spa type, update fields accordingly
         weight: isSpa ? 'N/A' : prev.weight,
         stock: isSpa ? 999 : prev.stock,
       }));
@@ -122,6 +123,7 @@ const EditProductDialog = ({ productId, onClose, onProductUpdated }) => {
       const data = new FormData();
       data.append('name', formData.name);
       data.append('category', formData.category);
+      data.append('importPrice', parseFloat(formData.importPrice)); // Added importPrice
       data.append('price', parseFloat(formData.price));
       data.append('description', formData.description);
 
@@ -159,9 +161,28 @@ const EditProductDialog = ({ productId, onClose, onProductUpdated }) => {
     return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
       currency: 'VND',
-      minimumFractionDigits: 0
+      minimumFractionDigits: 0,
     }).format(price);
   };
+
+  // Calculate profit (copied from AddProducts)
+  const calculateProfit = () => {
+    if (formData.importPrice && formData.price) {
+      const importPrice = parseFloat(formData.importPrice);
+      const salePrice = parseFloat(formData.price);
+      if (!isNaN(importPrice) && !isNaN(salePrice)) {
+        const profit = salePrice - importPrice;
+        const profitPercent = (profit / importPrice) * 100;
+        return {
+          amount: formatPrice(profit),
+          percent: profitPercent.toFixed(2),
+        };
+      }
+    }
+    return { amount: '-', percent: '-' };
+  };
+
+  const profit = calculateProfit();
 
   // Stop event propagation
   const stopPropagation = (e) => {
@@ -194,7 +215,7 @@ const EditProductDialog = ({ productId, onClose, onProductUpdated }) => {
               <svg className="h-4 w-4 text-red-500 mr-2 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
                 <path
                   fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
                   clipRule="evenodd"
                 />
               </svg>
@@ -213,7 +234,7 @@ const EditProductDialog = ({ productId, onClose, onProductUpdated }) => {
               <svg className="h-4 w-4 text-green-500 mr-2 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
                 <path
                   fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                  d="M10 18a8 0 100-16 8 8 0 000 16zm3.707-9.293a1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 0 00-1.414 1.414l2 2a1 0 001.414 0l4-4z"
                   clipRule="evenodd"
                 />
               </svg>
@@ -290,20 +311,49 @@ const EditProductDialog = ({ productId, onClose, onProductUpdated }) => {
                 </select>
                 <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
                   <svg className="h-4 w-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                    <path fillRule="evenodd" d="M5.293 7.293a1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 0 01-1.414 0l-4-4a1 0 010-1.414z" clipRule="evenodd" />
                   </svg>
                 </div>
               </div>
             </div>
 
-            {/* Giá */}
+            {/* Giá nhập */}
+            <div className="form-group">
+              <label
+                htmlFor="importPrice"
+                className="flex items-center text-xs sm:text-sm font-medium text-gray-700 mb-1.5"
+              >
+                <FaShoppingCart className="mr-1.5 text-blue-500 text-xs" />
+                Giá nhập (VND)
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  id="importPrice"
+                  name="importPrice"
+                  value={formData.importPrice}
+                  onChange={handleInputChange}
+                  min="0"
+                  className="w-full border border-gray-300 rounded-lg py-1.5 sm:py-2 px-2 sm:px-3 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
+                  placeholder="Nhập giá nhập sản phẩm"
+                  required
+                />
+                {formData.importPrice && (
+                  <div className="mt-1 text-right text-xs text-blue-600 font-medium">
+                    {formatPrice(formData.importPrice)}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Giá bán */}
             <div className="form-group">
               <label
                 htmlFor="price"
                 className="flex items-center text-xs sm:text-sm font-medium text-gray-700 mb-1.5"
               >
                 <FaDollarSign className="mr-1.5 text-blue-500 text-xs" />
-                Giá (VND)
+                Giá bán (VND)
               </label>
               <div className="relative">
                 <input
@@ -314,7 +364,7 @@ const EditProductDialog = ({ productId, onClose, onProductUpdated }) => {
                   onChange={handleInputChange}
                   min="0"
                   className="w-full border border-gray-300 rounded-lg py-1.5 sm:py-2 px-2 sm:px-3 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
-                  placeholder="Nhập giá sản phẩm"
+                  placeholder="Nhập giá bán sản phẩm"
                   required
                 />
                 {formData.price && (
@@ -324,6 +374,21 @@ const EditProductDialog = ({ productId, onClose, onProductUpdated }) => {
                 )}
               </div>
             </div>
+
+            {/* Hiển thị lợi nhuận dự kiến */}
+            {formData.importPrice && formData.price && (
+              <div className="form-group">
+                <div className="bg-green-50 border border-green-100 rounded-lg p-2 sm:p-3">
+                  <p className="text-xs sm:text-sm font-medium text-green-800 mb-1">Lợi nhuận dự kiến:</p>
+                  <div className="flex justify-between">
+                    <span className="text-xs sm:text-sm text-green-700">{profit.amount}</span>
+                    <span className="text-xs sm:text-sm font-medium bg-green-100 px-1.5 sm:px-2 py-0.5 rounded-full text-green-800">
+                      {profit.percent}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Mô tả */}
             <div className="form-group">

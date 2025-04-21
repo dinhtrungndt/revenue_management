@@ -5,21 +5,14 @@ import {
   FaEyeSlash,
   FaSpinner,
   FaStar,
-  FaBoxOpen,
   FaWeightHanging,
-  FaCalendarAlt,
-  FaHistory,
-  FaTag,
-  FaLayerGroup,
   FaExclamationTriangle,
-  FaEye
 } from 'react-icons/fa';
 import { ProductService } from '../../../../services/apiService';
 import { APP_CONFIG } from '../../../../config';
-import { MdDelete } from 'react-icons/md';
 import EditProductDialog from '../update/index.js';
 import { useDispatch } from 'react-redux';
-import { fetchProductById, fetchProducts } from '../../../../stores/redux/actions/adminActions.js.js';
+import {  fetchProducts } from '../../../../stores/redux/actions/adminActions.js.js';
 import { LuEyeClosed } from 'react-icons/lu';
 
 const ProductDetailDialogAdmin = ({ productId, onClose, onProductHidden }) => {
@@ -118,13 +111,6 @@ const ProductDetailDialogAdmin = ({ productId, onClose, onProductHidden }) => {
       currency: 'VND',
       minimumFractionDigits: 0
     }).format(price);
-  };
-
-  // Format ngày tháng
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('vi-VN');
   };
 
   return (

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaTimes, FaSave, FaUpload, FaSpinner, FaTag, FaLayerGroup, FaDollarSign,
-  FaPencilAlt, FaWeightHanging, FaBoxOpen, FaStar, FaCamera, FaArrowLeft, FaShoppingCart } from 'react-icons/fa';
+  FaPencilAlt, FaWeightHanging, FaBoxOpen, FaStar, FaCamera, FaShoppingCart } from 'react-icons/fa';
 import { ProductService } from '../../../../services/apiService';
 import { APP_CONFIG } from '../../../../config';
 import { useAuth } from '../../../../contexts/AuthContext';
