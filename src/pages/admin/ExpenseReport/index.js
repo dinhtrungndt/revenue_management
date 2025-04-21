@@ -319,57 +319,39 @@ const ExpenseReport = () => {
             <div className="px-6 py-4 border-b border-gray-200">
               <h2 className="text-lg font-semibold text-gray-800">Chi tiết theo danh mục</h2>
             </div>
-
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
+            <div className="overflow-x-auto w-full">
+              <table className="min-w-full divide-y divide-gray-200 text-sm">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Danh mục
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Giao dịch
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Tổng chi phí
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Trung bình
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Tỷ lệ
-                    </th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Danh mục</th>
+                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Giao dịch</th>
+                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Tổng chi phí</th>
+                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Trung bình</th>
+                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Tỷ lệ</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {getCategoryChartData().map((item, index) => (
                     <tr key={index}>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-4 py-2 whitespace-nowrap">
                         <div className="flex items-center">
                           <div
                             className="w-3 h-3 rounded-full mr-2"
                             style={{ backgroundColor: item.color }}
                           ></div>
-                          <div className="text-sm font-medium text-gray-900">{item.category}</div>
+                          <div className="text-gray-900">{item.category}</div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500">
-                        {item.count}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-gray-900">
-                        {formatCurrency(item.value)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500">
-                        {formatCurrency(item.count > 0 ? item.value / item.count : 0)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500">
-                        {calculatePercentage(item.value)}%
-                      </td>
+                      <td className="px-4 py-2 text-right text-gray-600">{item.count}</td>
+                      <td className="px-4 py-2 text-right text-gray-900 font-medium">{formatCurrency(item.value)}</td>
+                      <td className="px-4 py-2 text-right text-gray-600">{formatCurrency(item.count > 0 ? item.value / item.count : 0)}</td>
+                      <td className="px-4 py-2 text-right text-gray-600">{calculatePercentage(item.value)}%</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
+
           </div>
         </>
       )}
