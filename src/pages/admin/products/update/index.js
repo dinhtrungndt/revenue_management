@@ -77,6 +77,13 @@ const EditProductDialog = ({ productId, onClose, onProductUpdated }) => {
         weight: isSpa ? 'N/A' : prev.weight,
         stock: isSpa ? 999 : prev.stock,
       }));
+    } else if (name === 'giftEnabled' && type === 'checkbox') {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: checked,
+        giftDescription: checked ? prev.giftDescription : '',
+        giftStock: checked ? prev.giftStock : '',
+      }));
     } else {
       setFormData((prev) => ({
         ...prev,
