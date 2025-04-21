@@ -1,4 +1,3 @@
-// components/admin/AdminProductsPage.js
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
@@ -18,14 +17,14 @@ import {
   FaTimes,
   FaEllipsisV,
   FaTrashAlt,
-  FaGift,
+  FaStar,
 } from 'react-icons/fa';
-import { fetchProducts } from '../../../../stores/redux/actions/adminActions.js';
 import { APP_CONFIG } from '../../../../config/index.js';
 import { useAuth } from '../../../../contexts/AuthContext.js';
 import { ProductService } from '../../../../services/apiService';
 import ProductDetailDialogAdmin from '../detail/index.js';
 import EditProductDialog from '../update/index.js';
+import { fetchProducts } from '../../../../stores/redux/actions/adminActions.js';
 
 const AdminProductsPage = () => {
   const navigate = useNavigate();
@@ -527,10 +526,10 @@ const AdminProductsPage = () => {
                         <span className="px-1.5 py-0.5 text-xs rounded-full bg-gray-100 text-gray-800">
                           {formatPrice(product.price)}
                         </span>
-                        {product.gift?.enabled && (
+                        {product.canBeGift && (
                           <span className="px-1.5 py-0.5 text-xs rounded-full bg-green-100 text-green-800 flex items-center">
-                            <FaGift className="mr-1 h-3 w-3" />
-                            {product.gift.description}
+                            <FaStar className="mr-1 h-3 w-3" />
+                            Quà tặng
                           </span>
                         )}
                       </div>
@@ -547,14 +546,6 @@ const AdminProductsPage = () => {
                           <span className="text-xs text-yellow-600 font-medium">{product.stock} - Sắp hết</span>
                         ) : (
                           <span className="text-xs text-green-600 font-medium">{product.stock} sp</span>
-                        )}
-                        {product.gift?.enabled && (
-                          <>
-                            <span className="mx-1 text-gray-300">•</span>
-                            <span className="text-xs text-green-600 font-medium">
-                              Quà: {product.gift.stock} sp
-                            </span>
-                          </>
                         )}
                         {product.featured && (
                           <>

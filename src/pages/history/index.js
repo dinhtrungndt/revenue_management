@@ -234,13 +234,6 @@ const OrderHistoryPage = () => {
                         {item.spaNote && (
                           <div className="mt-1 text-xs text-gray-500">Ghi chú: {item.spaNote}</div>
                         )}
-                        {/* Hiển thị thông tin quà tặng nếu có */}
-                        {item.gift && item.gift.enabled && (
-                          <div className="mt-1 text-xs text-green-600 flex items-center">
-                            <FaGift className="mr-1 h-3 w-3" />
-                            Tặng kèm: {item.gift.description}
-                          </div>
-                        )}
                         <div className="mt-1 text-xs text-gray-500">
                           SL: {item.quantity} x {formatPrice(item.price)}
                         </div>
@@ -253,10 +246,31 @@ const OrderHistoryPage = () => {
                 ))}
               </ul>
 
+              {/* Hiển thị thông tin quà tặng nếu có */}
+              {order.gift && order.gift.included && (
+                <div className="px-3 py-2 bg-green-50 border-t border-green-100">
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0 mt-1">
+                      <FaGift className="h-4 w-4 text-green-500" />
+                    </div>
+                    <div className="ml-2">
+                      <p className="text-xs font-medium text-green-800">Quà tặng kèm:</p>
+                      <div className="flex justify-between items-center mt-1">
+                        <p className="text-xs text-green-700">{order.gift.name}</p>
+                        <p className="text-xs text-green-700">
+                          <s>{formatPrice(order.gift.originalPrice)}</s> {formatPrice(0)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="px-3 py-3 bg-gray-50 border-t border-gray-200">
                 <div className="flex flex-col text-sm">
                   <p className="text-gray-600 text-xs">
                     Tổng sản phẩm/dịch vụ: {order.products.reduce((total, item) => total + item.quantity, 0)}
+                    {order.gift && order.gift.included ? ' + 1 quà tặng' : ''}
                   </p>
                   <p className="text-gray-900 font-bold text-sm mt-1">
                     Tổng tiền: <span className="text-red-600">{formatPrice(order.totalAmount)}</span>

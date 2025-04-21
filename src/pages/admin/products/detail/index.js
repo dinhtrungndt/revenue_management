@@ -12,7 +12,7 @@ import { ProductService } from '../../../../services/apiService';
 import { APP_CONFIG } from '../../../../config';
 import EditProductDialog from '../update/index.js';
 import { useDispatch } from 'react-redux';
-import {  fetchProducts } from '../../../../stores/redux/actions/adminActions.js.js';
+import { fetchProducts } from '../../../../stores/redux/actions/adminActions.js';
 import { LuEyeClosed } from 'react-icons/lu';
 
 const ProductDetailDialogAdmin = ({ productId, onClose, onProductHidden }) => {
@@ -232,6 +232,13 @@ const ProductDetailDialogAdmin = ({ productId, onClose, onProductHidden }) => {
                           <p className="text-yellow-600 font-medium">Sản phẩm nổi bật</p>
                         </div>
                       )}
+                      {/* Hiển thị thông tin có thể làm quà hay không */}
+                      <div className="flex items-center col-span-2">
+                        <div className="w-3 h-3 rounded-full mr-1 mt-0.5" style={{ backgroundColor: product.canBeGift ? '#10B981' : '#EF4444' }}></div>
+                        <p className={`font-medium ${product.canBeGift ? 'text-green-600' : 'text-red-600'}`}>
+                          {product.canBeGift ? 'Có thể làm quà tặng' : 'Không thể làm quà tặng'}
+                        </p>
+                      </div>
                     </div>
                   </div>
 

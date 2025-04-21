@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaTimes, FaSave, FaUpload, FaSpinner, FaTag, FaLayerGroup, FaDollarSign,
-  FaPencilAlt, FaWeightHanging, FaBoxOpen, FaStar, FaCamera, FaGift } from 'react-icons/fa';
+  FaPencilAlt, FaWeightHanging, FaBoxOpen, FaStar, FaCamera } from 'react-icons/fa';
 import { ProductService } from '../../../../services/apiService';
 import { APP_CONFIG } from '../../../../config';
 import { useAuth } from '../../../../contexts/AuthContext';
@@ -21,9 +21,7 @@ const AddProducts = () => {
     stock: '',
     featured: false,
     image: null,
-    giftEnabled: false,
-    giftDescription: '',
-    giftStock: '',
+    canBeGift: true, // Thêm trường mới để đánh dấu sản phẩm có thể làm quà hay không
   });
   const [previewImage, setPreviewImage] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -69,14 +67,9 @@ const AddProducts = () => {
         data.append('stock', parseInt(formData.stock, 10));
       }
       data.append('featured', formData.featured);
+      data.append('canBeGift', formData.canBeGift); // Thêm trường canBeGift
       if (formData.image) {
         data.append('image', formData.image);
-      }
-      // Thêm thông tin gift
-      data.append('giftEnabled', formData.giftEnabled);
-      if (formData.giftEnabled) {
-        data.append('giftDescription', formData.giftDescription);
-        data.append('giftStock', parseInt(formData.giftStock, 10));
       }
 
       await ProductService.createProduct(data);
@@ -93,9 +86,7 @@ const AddProducts = () => {
           stock: '',
           featured: false,
           image: null,
-          giftEnabled: false,
-          giftDescription: '',
-          giftStock: '',
+          canBeGift: true,
         });
         setPreviewImage(null);
       }, 2000);
@@ -341,56 +332,20 @@ const AddProducts = () => {
             <div className="form-group">
               <div className="flex items-center bg-gray-50 p-3 rounded-lg border border-gray-200">
                 <input
-                  id="giftEnabled"
-                  name="giftEnabled"
+                  id="canBeGift"
+                  name="canBeGift"
                   type="checkbox"
-                  checked={formData.giftEnabled}
+                  checked={formData.canBeGift}
                   onChange={handleInputChange}
                   className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                 />
-                <label htmlFor="giftEnabled" className="ml-3 flex items-center text-sm text-gray-700">
-                  <FaGift className="mr-2 text-green-500" />
-                  Kích hoạt sản phẩm tặng kèm
+                <label htmlFor="canBeGift" className="ml-3 flex items-center text-sm text-gray-700">
+                  Có thể dùng làm quà tặng
                 </label>
               </div>
-              {formData.giftEnabled && (
-                <div className="mt-3 space-y-3">
-                  <div>
-                    <label htmlFor="giftDescription" className="flex items-center text-sm font-medium text-gray-700 mb-2">
-                      <FaPencilAlt className="mr-2 text-blue-500" />
-                      Mô tả sản phẩm tặng kèm
-                    </label>
-                    <textarea
-                      id="giftDescription"
-                      name="giftDescription"
-                      rows="2"
-                      value={formData.giftDescription}
-                      onChange={handleInputChange}
-                      className="w-full border border-gray-300 rounded-lg py-3 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-all duration-200 resize-none"
-                      placeholder="VD: Bình nước 500ml, đồ chơi nhỏ,..."
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="giftStock" className="flex items-center text-sm font-medium text-gray-700 mb-2">
-                      <FaBoxOpen className="mr-2 text-blue-500" />
-                      Số lượng tồn kho của sản phẩm tặng kèm
-                    </label>
-                    <input
-                      type="number"
-                      id="giftStock"
-                      name="giftStock"
-                      value={formData.giftStock}
-                      onChange={handleInputChange}
-                      min="0"
-                      step="1"
-                      className="w-full border border-gray-300 rounded-lg py-3 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-all duration-200"
-                      placeholder="Nhập số lượng tồn kho"
-                      required
-                    />
-                  </div>
-                </div>
-              )}
+              <p className="mt-1 text-xs text-gray-500">
+                Sản phẩm này sẽ xuất hiện trong danh sách quà tặng khi khách hàng thanh toán.
+              </p>
             </div>
             <div className="form-group">
               <label htmlFor="image" className="flex items-center text-sm font-medium text-gray-700 mb-2">

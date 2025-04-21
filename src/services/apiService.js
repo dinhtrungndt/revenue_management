@@ -21,6 +21,16 @@ export const ProductService = {
     }
   },
 
+  getGiftableProducts: async () => {
+    try {
+      const response = await apiClient.get('/api/products/giftable');
+      console.log('Giftable products:', response.data);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
   // Tạo sản phẩm mới
   createProduct: async (productData) => {
     try {

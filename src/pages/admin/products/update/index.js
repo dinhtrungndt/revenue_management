@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   FaTimes, FaSave, FaUpload, FaSpinner, FaTag, FaLayerGroup,
   FaDollarSign, FaPencilAlt, FaWeightHanging, FaBoxOpen,
-  FaStar, FaCamera, FaTrash, FaGift
+  FaStar, FaCamera, FaTrash
 } from 'react-icons/fa';
 import { APP_CONFIG } from '../../../../config';
 import { ProductService } from '../../../../services/apiService';
@@ -16,9 +16,7 @@ const EditProductDialog = ({ productId, onClose, onProductUpdated }) => {
     weight: '',
     stock: '',
     featured: false,
-    giftEnabled: false,
-    giftDescription: '',
-    giftStock: '',
+    canBeGift: true, // Thay thế trường giftEnabled bằng canBeGift
   });
   const [originalImage, setOriginalImage] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
@@ -45,9 +43,7 @@ const EditProductDialog = ({ productId, onClose, onProductUpdated }) => {
           weight: product.weight || '',
           stock: product.stock || '',
           featured: product.featured || false,
-          giftEnabled: product.gift?.enabled || false,
-          giftDescription: product.gift?.description || '',
-          giftStock: product.gift?.stock || '',
+          canBeGift: product.canBeGift !== undefined ? product.canBeGift : true, // Cập nhật từ response
         });
 
         if (product.image) {
@@ -76,13 +72,6 @@ const EditProductDialog = ({ productId, onClose, onProductUpdated }) => {
         [name]: value,
         weight: isSpa ? 'N/A' : prev.weight,
         stock: isSpa ? 999 : prev.stock,
-      }));
-    } else if (name === 'giftEnabled' && type === 'checkbox') {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: checked,
-        giftDescription: checked ? prev.giftDescription : '',
-        giftStock: checked ? prev.giftStock : '',
       }));
     } else {
       setFormData((prev) => ({
@@ -130,11 +119,7 @@ const EditProductDialog = ({ productId, onClose, onProductUpdated }) => {
         data.append('stock', parseInt(formData.stock));
       }
       data.append('featured', formData.featured);
-      data.append('giftEnabled', formData.giftEnabled);
-      if (formData.giftEnabled) {
-        data.append('giftDescription', formData.giftDescription);
-        data.append('giftStock', parseInt(formData.giftStock));
-      }
+      data.append('canBeGift', formData.canBeGift); // Thêm trường canBeGift
       if (newImage) {
         data.append('image', newImage);
       } else if (deleteImageMode) {
@@ -361,55 +346,20 @@ const EditProductDialog = ({ productId, onClose, onProductUpdated }) => {
             <div className="form-group">
               <div className="flex items-center bg-gray-50 p-2 sm:p-3 rounded-lg border border-gray-200">
                 <input
-                  id="giftEnabled"
-                  name="giftEnabled"
+                  id="canBeGift"
+                  name="canBeGift"
                   type="checkbox"
-                  checked={formData.giftEnabled}
+                  checked={formData.canBeGift}
                   onChange={handleInputChange}
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                 />
-                <label htmlFor="giftEnabled" className="ml-2 flex items-center text-xs sm:text-sm text-gray-700">
-                  <FaGift className="mr-1.5 text-green-500 text-xs" />
-                  Kích hoạt sản phẩm tặng kèm
+                <label htmlFor="canBeGift" className="ml-2 flex items-center text-xs sm:text-sm text-gray-700">
+                  Có thể dùng làm quà tặng
                 </label>
               </div>
-              {formData.giftEnabled && (
-                <div className="mt-3 space-y-3">
-                  <div>
-                    <label htmlFor="giftDescription" className="flex items-center text-xs sm:text-sm font-medium text-gray-700 mb-1.5">
-                      <FaPencilAlt className="mr-1.5 text-blue-500 text-xs" />
-                      Mô tả sản phẩm tặng kèm
-                    </label>
-                    <textarea
-                      id="giftDescription"
-                      name="giftDescription"
-                      rows="2"
-                      value={formData.giftDescription}
-                      onChange={handleInputChange}
-                      className="w-full border border-gray-300 rounded-lg py-1.5 sm:py-2 px-2 sm:px-3 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm resize-none"
-                      placeholder="VD: Bình nước 500ml, đồ chơi nhỏ,..."
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="giftStock" className="flex items-center text-xs sm:text-sm font-medium text-gray-700 mb-1.5">
-                      <FaBoxOpen className="mr-1.5 text-blue-500 text-xs" />
-                      Số lượng tồn kho của sản phẩm tặng kèm
-                    </label>
-                    <input
-                      type="number"
-                      id="giftStock"
-                      name="giftStock"
-                      value={formData.giftStock}
-                      onChange={handleInputChange}
-                      min="0"
-                      className="w-full border border-gray-300 rounded-lg py-1.5 sm:py-2 px-2 sm:px-3 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
-                      placeholder="Nhập số lượng tồn kho"
-                      required
-                    />
-                  </div>
-                </div>
-              )}
+              <p className="mt-1 text-xs text-gray-500">
+                Sản phẩm này sẽ xuất hiện trong danh sách quà tặng khi khách hàng thanh toán.
+              </p>
             </div>
             <div className="form-group">
               <label htmlFor="image" className="flex items-center text-xs sm:text-sm font-medium text-gray-700 mb-1.5">

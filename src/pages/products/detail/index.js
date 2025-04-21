@@ -1,5 +1,6 @@
 // components/user/detail/index.js
-import { FaTimes, FaPlus, FaMinus, FaExclamationTriangle, FaShoppingCart, FaGift } from 'react-icons/fa';
+import React from 'react';
+import { FaTimes, FaPlus, FaMinus, FaExclamationTriangle, FaShoppingCart } from 'react-icons/fa';
 
 const ProductDetailPage = ({
   selectedProduct,
@@ -15,48 +16,6 @@ const ProductDetailPage = ({
 }) => {
   const formatPrice = (price) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
-  };
-
-  // Kiểm tra tình trạng quà tặng (tách biệt với tình trạng sản phẩm)
-  const giftStatus = () => {
-    if (!selectedProduct.gift?.enabled) return "no_gift"; // Không có quà tặng
-    if (selectedProduct.gift.stock === 0) return "out_of_gift"; // Hết quà tặng
-    if (selectedProduct.gift.stock < quantity) return "insufficient_gift"; // Không đủ quà tặng
-    return "has_gift"; // Có đủ quà tặng
-  };
-
-  // Kiểm tra tình trạng sản phẩm
-  const productStatus = () => {
-    if (selectedProduct.stock === 0) return "out_of_stock"; // Hết hàng
-    if (selectedProduct.stock < quantity) return "insufficient_stock"; // Không đủ hàng
-    return "in_stock"; // Còn hàng
-  };
-
-  // Hiển thị thông báo tùy thuộc vào tình trạng quà tặng
-  const giftMessage = () => {
-    const status = giftStatus();
-
-    if (status === "no_gift") return null;
-
-    if (status === "out_of_gift") {
-      return (
-        <div className="text-xs text-orange-500 mt-1">
-          Đã hết quà tặng. Bạn vẫn có thể mua sản phẩm mà không có quà.
-        </div>
-      );
-    } else if (status === "insufficient_gift") {
-      return (
-        <div className="text-xs text-orange-500 mt-1">
-          Quà tặng chỉ còn {selectedProduct.gift.stock}. Nếu mua {quantity} sản phẩm, bạn sẽ không nhận đủ quà.
-        </div>
-      );
-    } else {
-      return (
-        <div className="text-xs text-green-600 mt-1">
-          Số lượng quà còn: {selectedProduct.gift.stock}
-        </div>
-      );
-    }
   };
 
   return (
@@ -108,27 +67,6 @@ const ProductDetailPage = ({
               <div className="mb-3 text-xs text-gray-500">
                 {selectedProduct.description}
               </div>
-              {selectedProduct.gift?.enabled && (
-                <div className={`mb-3 p-2 rounded-lg ${
-                  giftStatus() === "has_gift" ? "bg-green-50" :
-                  giftStatus() === "out_of_gift" ? "bg-gray-50" : "bg-orange-50"
-                }`}>
-                  <div className="flex items-center">
-                    <FaGift className={`h-4 w-4 mr-2 ${
-                      giftStatus() === "has_gift" ? "text-green-500" :
-                      giftStatus() === "out_of_gift" ? "text-gray-400" : "text-orange-500"
-                    }`} />
-                    <span className={`text-xs font-medium ${
-                      giftStatus() === "has_gift" ? "text-green-700" :
-                      giftStatus() === "out_of_gift" ? "text-gray-600" : "text-orange-700"
-                    }`}>
-                      Tặng kèm: {selectedProduct.gift.description}
-                    </span>
-                  </div>
-                  {/* Hiển thị thông báo tình trạng quà tặng */}
-                  {giftMessage()}
-                </div>
-              )}
               {selectedProduct.stock > 0 && (
                 <div className="mb-3">
                   <div className="flex items-center justify-between">
@@ -161,18 +99,10 @@ const ProductDetailPage = ({
                   <div className="mt-1 text-xs text-green-600">
                     Còn {selectedProduct.stock} sản phẩm
                   </div>
-                  {/* Hiển thị cảnh báo nếu số lượng sản phẩm không đủ */}
-                  {productStatus() === "insufficient_stock" && (
+                  {selectedProduct.stock < quantity && (
                     <div className="mt-1 text-xs text-red-500 flex items-center">
                       <FaExclamationTriangle className="mr-1 h-3 w-3" />
                       Sản phẩm không đủ số lượng đã chọn
-                    </div>
-                  )}
-                  {/* Hiển thị cảnh báo nếu có quà tặng nhưng không đủ số lượng - CẢNH BÁO MÀU CAM */}
-                  {(giftStatus() === "insufficient_gift" || giftStatus() === "out_of_gift") && (
-                    <div className="mt-1 text-xs text-orange-500 flex items-center">
-                      <FaExclamationTriangle className="mr-1 h-3 w-3" />
-                      Quà tặng không đủ cho số lượng đã chọn
                     </div>
                   )}
                   <div className="flex justify-between items-center mt-2">
@@ -207,14 +137,13 @@ const ProductDetailPage = ({
               <button
                 type="button"
                 onClick={handleBuyNow}
-                disabled={ordering || productStatus() === "insufficient_stock"}
+                disabled={ordering || selectedProduct.stock < quantity}
                 className={`w-1/2 inline-flex justify-center items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white ${
-                  productStatus() === "insufficient_stock" ? 'bg-gray-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'
+                  selectedProduct.stock < quantity ? 'bg-gray-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'
                 } focus:outline-none ${ordering ? 'opacity-70 cursor-not-allowed' : ''}`}
               >
                 <FaShoppingCart className="mr-1.5 h-3 w-3" />
-                {giftStatus() === "out_of_gift" ? 'Mua không quà' :
-                 giftStatus() === "insufficient_gift" ? 'Mua quà không đủ' : 'Mua ngay'}
+                Mua ngay
               </button>
             ) : (
               <button

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FaSearch, FaFilter, FaSortAmountDown, FaSortAmountUp, FaPaw, FaGift } from 'react-icons/fa';
+import { FaSearch, FaFilter, FaSortAmountDown, FaSortAmountUp, FaPaw, FaStar, FaExclamationCircle } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
 import { APP_CONFIG } from '../../config';
 import { fetchProducts } from '../../stores/redux/actions/adminActions.js';
@@ -175,16 +175,10 @@ const ProductsPage = () => {
       return;
     }
 
-    // Kiểm tra quà tặng riêng biệt (không gây nhầm lẫn với kiểm tra sản phẩm)
-    if (selectedProduct.gift?.enabled && selectedProduct.gift.stock < quantity) {
-      // Không ngăn việc mua hàng, chỉ thông báo
-      console.log(`Quà tặng không đủ số lượng. Hiện có ${selectedProduct.gift.stock} quà tặng.`);
-    }
-
     setShowPaymentModal(true);
   };
 
-  const handleCheckout = async () => {
+  const handleCheckout = async (giftData = null) => {
     try {
       setOrdering(true);
       setOrderError(null);
@@ -198,6 +192,11 @@ const ProductsPage = () => {
         ],
         paymentMethod: paymentMethod,
       };
+
+      // Thêm thông tin quà tặng nếu có
+      if (giftData) {
+        orderData.gift = giftData;
+      }
 
       await OrderService.createOrder(orderData);
       setOrderSuccess(true);
@@ -216,12 +215,6 @@ const ProductsPage = () => {
 
       // Phân tích thông báo lỗi từ server để hiển thị chính xác
       let errorMessage = err.response?.data?.message || err.message || 'Đã xảy ra lỗi khi đặt hàng. Vui lòng thử lại sau.';
-
-      if (errorMessage.includes('quà tặng')) {
-        errorMessage = `⚠️ ${errorMessage} (Bạn có thể mua sản phẩm mà không có quà)`;
-      } else if (errorMessage.includes('sản phẩm không đủ số lượng')) {
-        errorMessage = `❌ ${errorMessage}`;
-      }
 
       setOrderError(errorMessage);
     } finally {
@@ -403,7 +396,7 @@ const ProductsPage = () => {
                 <div
                   key={product._id}
                   onClick={() => openProductModal(product)}
-                  className="bg-white rounded-lg shadow overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
+                  className="bg-white rounded-lg shadow overflow-hidden cursor-pointer hover:shadow-lg transition-shadow relative"
                 >
                   <div className="relative">
                     <img
@@ -416,10 +409,12 @@ const ProductsPage = () => {
                       alt={product.name}
                       className="w-full h-32 object-cover"
                     />
-                    {product.gift?.enabled && (
-                      <div className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full flex items-center">
-                        <FaGift className="mr-1 h-3 w-3" />
-                        Có quà
+
+                    {/* Hiển thị badge sản phẩm nổi bật */}
+                    {product.featured && (
+                      <div className="absolute top-2 left-2 bg-amber-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-md flex items-center">
+                        <FaStar className="mr-1 h-3 w-3" />
+                        <span>Nổi bật</span>
                       </div>
                     )}
                   </div>
@@ -427,21 +422,42 @@ const ProductsPage = () => {
                     <h3 className="text-sm font-medium text-gray-900 truncate">{product.name}</h3>
                     <p className="text-base font-bold text-red-600 mt-1">{formatPrice(product.price)}</p>
                     <div className="mt-1 flex items-center justify-between">
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded-md">
                         {APP_CONFIG.PRODUCT_CATEGORIES.find((c) => c.value === product.category)?.label ||
                           product.category}
                       </span>
+
+                      {/* Hiển thị trạng thái tồn kho cải tiến */}
                       {product.category === 'spa' ? (
-                        <span className="text-xs text-gray-500">Dịch vụ</span>
+                        <span className="text-xs text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded-md flex items-center">
+                          <FaPaw className="mr-1 h-2.5 w-2.5" />
+                          Dịch vụ
+                        </span>
                       ) : product.stock <= 0 ? (
-                        <span className="text-xs text-red-600">Hết hàng</span>
+                        <span className="text-xs text-white bg-red-500 px-1.5 py-0.5 rounded-md font-medium">
+                          Hết hàng
+                        </span>
                       ) : product.stock < 10 ? (
-                        <span className="text-xs text-yellow-600">Còn {product.stock}</span>
+                        <span className="text-xs text-white bg-amber-500 px-1.5 py-0.5 rounded-md font-medium flex items-center">
+                          <FaExclamationCircle className="mr-1 h-2.5 w-2.5" />
+                          Còn {product.stock}
+                        </span>
                       ) : (
-                        <span className="text-xs text-green-600">Còn hàng</span>
+                        <span className="text-xs text-white bg-green-500 px-1.5 py-0.5 rounded-md font-medium">
+                          Còn hàng
+                        </span>
                       )}
                     </div>
                   </div>
+
+                  {/* Ribbon cho sản phẩm sắp hết hàng */}
+                  {product.category !== 'spa' && product.stock > 0 && product.stock < 5 && (
+                    <div className="absolute top-0 right-0">
+                      <div className="bg-red-500 text-white text-xs py-1 px-3 transform rotate-45 translate-x-6 -translate-y-1 shadow-md">
+                        Sắp hết!
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
