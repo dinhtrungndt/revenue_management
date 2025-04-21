@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import {
   FaPlus, FaEdit, FaTrashAlt, FaEyeSlash, FaSearch,
   FaSort, FaFilter, FaFileInvoiceDollar, FaCalendarAlt,
-  FaDollarSign, FaSpinner, FaTimes, FaSave, FaUpload, FaTags
+  FaDollarSign, FaSpinner, FaTimes, FaSave, FaUpload, FaTags,
+  FaEye, FaList, FaArchive, FaChevronLeft, FaChevronRight
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -32,9 +33,14 @@ const formatDateToYYYYMMDD = (date) => {
 const CostsMana = () => {
   const { isAuthenticated, user } = useAuth();
 
+  // State cho hiển thị danh sách chính/ẩn
+  const [viewMode, setViewMode] = useState('active'); // 'active' hoặc 'hidden'
+
   // State cho danh sách chi phí
   const [expenses, setExpenses] = useState([]);
+  const [hiddenExpenses, setHiddenExpenses] = useState([]);
   const [totalAmount, setTotalAmount] = useState(0);
+  const [totalHiddenAmount, setTotalHiddenAmount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -81,20 +87,33 @@ const CostsMana = () => {
       if (filters.dateTo) params.to = filters.dateTo;
       if (filters.isRecurring !== '') params.isRecurring = filters.isRecurring;
 
-      const result = await ExpenseService.getExpenses(params);
+      // Lấy danh sách chi phí hiển thị
+      const activeResult = await ExpenseService.getExpenses(params);
+
+      // Lấy danh sách chi phí đã ẩn
+      const hiddenResult = await ExpenseService.getHiddenExpenses(params);
 
       // Lọc theo search nếu có
-      let filteredData = result.expenses;
+      let filteredActiveData = activeResult.expenses;
+      let filteredHiddenData = hiddenResult.expenses;
+
       if (filters.search) {
         const searchTerm = filters.search.toLowerCase();
-        filteredData = filteredData.filter(expense =>
+        filteredActiveData = filteredActiveData.filter(expense =>
+          expense.title.toLowerCase().includes(searchTerm) ||
+          (expense.description && expense.description.toLowerCase().includes(searchTerm))
+        );
+
+        filteredHiddenData = filteredHiddenData.filter(expense =>
           expense.title.toLowerCase().includes(searchTerm) ||
           (expense.description && expense.description.toLowerCase().includes(searchTerm))
         );
       }
 
-      setExpenses(filteredData);
-      setTotalAmount(result.totalAmount);
+      setExpenses(filteredActiveData);
+      setHiddenExpenses(filteredHiddenData);
+      setTotalAmount(activeResult.totalAmount);
+      setTotalHiddenAmount(hiddenResult.totalAmount);
     } catch (err) {
       console.error('Error fetching expenses:', err);
       setError(err.response?.data?.message || 'Không thể tải danh sách chi phí');
@@ -316,6 +335,21 @@ const CostsMana = () => {
     }
   };
 
+  // Xử lý khôi phục chi phí đã ẩn
+  const handleRestoreExpense = async (expenseId) => {
+    try {
+      setLoading(true);
+      await ExpenseService.restoreExpense(expenseId);
+      toast.success('Khôi phục chi phí thành công!');
+      fetchExpenses();
+    } catch (err) {
+      console.error('Error restoring expense:', err);
+      toast.error('Không thể khôi phục chi phí');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Format tiền tệ
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', minimumFractionDigits: 0 }).format(amount);
@@ -334,21 +368,58 @@ const CostsMana = () => {
   };
 
   // Tính toán phân trang
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = expenses.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(expenses.length / itemsPerPage);
+  const currentItems = viewMode === 'active'
+    ? expenses.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+    : hiddenExpenses.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  const totalPages = Math.ceil(
+    (viewMode === 'active' ? expenses.length : hiddenExpenses.length) / itemsPerPage
+  );
 
   // Chuyển trang
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
+  // Chuyển đổi giữa danh sách hiển thị và ẩn
+  const toggleViewMode = (mode) => {
+    setViewMode(mode);
+    setCurrentPage(1);
+  };
+
   return (
-    <div className="container mx-auto px-4 py-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-800 mb-4 md:mb-0">
-          <FaFileInvoiceDollar className="inline-block mr-2 text-blue-600" />
+    <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-6">
+      <div className="flex flex-col space-y-4 mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-800 flex items-center">
+          <FaFileInvoiceDollar className="mr-2 text-blue-600" />
           Quản lý Chi phí
         </h1>
+
+        {/* Bộ chuyển đổi chế độ xem hiển thị/ẩn */}
+        <div className="flex rounded-lg overflow-hidden border border-gray-300">
+          <button
+            onClick={() => toggleViewMode('active')}
+            className={`flex-1 px-3 sm:px-4 py-2 text-sm font-medium flex items-center justify-center ${
+              viewMode === 'active'
+                ? 'bg-blue-600 text-white'
+                : 'bg-white text-gray-700 hover:bg-gray-100'
+            }`}
+          >
+            <FaList className="mr-1 sm:mr-2" />
+            <span>Đang hiển thị</span>
+          </button>
+          <button
+            onClick={() => toggleViewMode('hidden')}
+            className={`flex-1 px-3 sm:px-4 py-2 text-sm font-medium flex items-center justify-center ${
+              viewMode === 'hidden'
+                ? 'bg-blue-600 text-white'
+                : 'bg-white text-gray-700 hover:bg-gray-100'
+            }`}
+          >
+            <FaArchive className="mr-1 sm:mr-2" />
+            <span>Đã ẩn</span>
+          </button>
+        </div>
+
+        {/* Nút thêm mới và bộ lọc */}
         <div className="flex flex-col sm:flex-row gap-2">
           <button
             onClick={handleAddExpense}
@@ -370,15 +441,19 @@ const CostsMana = () => {
       </div>
 
       {/* Tổng chi phí */}
-      <div className="bg-white rounded-lg shadow p-4 mb-6">
+      <div className="bg-white rounded-lg shadow p-4 mb-4 sm:mb-6">
         <div className="flex flex-col sm:flex-row justify-between items-center">
           <div className="mb-4 sm:mb-0">
-            <h2 className="text-lg font-semibold text-gray-700">Tổng chi phí</h2>
-            <p className="text-gray-500 text-sm">Tổng số: {expenses.length} chi phí</p>
+            <h2 className="text-lg font-semibold text-gray-700">
+              {viewMode === 'active' ? 'Tổng chi phí đang hiển thị' : 'Tổng chi phí đã ẩn'}
+            </h2>
+            <p className="text-gray-500 text-sm">
+              Tổng số: {viewMode === 'active' ? expenses.length : hiddenExpenses.length} chi phí
+            </p>
           </div>
           <div className="bg-blue-50 px-6 py-3 rounded-lg">
             <span className="block text-blue-800 font-bold text-lg md:text-2xl">
-              {formatCurrency(totalAmount)}
+              {formatCurrency(viewMode === 'active' ? totalAmount : totalHiddenAmount)}
             </span>
           </div>
         </div>
@@ -386,10 +461,10 @@ const CostsMana = () => {
 
       {/* Bộ lọc */}
       {showFilters && (
-        <div className="bg-white rounded-lg shadow p-4 mb-6">
+        <div className="bg-white rounded-lg shadow p-4 mb-4 sm:mb-6">
           <h2 className="text-lg font-semibold text-gray-700 mb-4">Bộ lọc</h2>
           <form onSubmit={handleApplyFilters}>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Tìm kiếm</label>
                 <div className="relative">
@@ -458,8 +533,8 @@ const CostsMana = () => {
         </div>
       )}
 
-      {/* Danh sách chi phí */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      {/* Danh sách chi phí - Desktop */}
+      <div className="bg-white rounded-lg shadow overflow-hidden hidden sm:block">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -495,7 +570,9 @@ const CostsMana = () => {
               ) : currentItems.length === 0 ? (
                 <tr>
                   <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
-                    Không có dữ liệu chi phí
+                    {viewMode === 'active'
+                      ? 'Không có dữ liệu chi phí hiển thị'
+                      : 'Không có dữ liệu chi phí đã ẩn'}
                   </td>
                 </tr>
               ) : (
@@ -542,16 +619,31 @@ const CostsMana = () => {
                         >
                           <FaEdit />
                         </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleHideExpense(expense._id);
-                          }}
-                          className="text-yellow-600 hover:text-yellow-900"
-                          title="Ẩn"
-                        >
-                          <FaEyeSlash />
-                        </button>
+
+                        {viewMode === 'active' ? (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleHideExpense(expense._id);
+                            }}
+                            className="text-yellow-600 hover:text-yellow-900"
+                            title="Ẩn"
+                          >
+                            <FaEyeSlash />
+                          </button>
+                        ) : (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRestoreExpense(expense._id);
+                            }}
+                            className="text-green-600 hover:text-green-900"
+                            title="Khôi phục"
+                          >
+                            <FaEye />
+                          </button>
+                        )}
+
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -571,83 +663,201 @@ const CostsMana = () => {
           </table>
         </div>
 
-        {/* Phân trang */}
-        {totalPages > 1 && (
+        {/* Phân trang - Desktop */}
+        {!loading && totalPages > 1 && (
           <div className="px-6 py-3 flex items-center justify-between border-t border-gray-200">
-            <div className="flex-1 flex justify-between sm:hidden">
-              <button
-                onClick={() => paginate(Math.max(1, currentPage - 1))}
-                disabled={currentPage === 1}
-                className={`relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-md ${
-                  currentPage === 1
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    : 'bg-white text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                Trước
-              </button>
-              <button
-                onClick={() => paginate(Math.min(totalPages, currentPage + 1))}
-                disabled={currentPage === totalPages}
-                className={`relative inline-flex items-center px-4 py-2 ml-3 text-sm font-medium rounded-md ${
-                  currentPage === totalPages
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    : 'bg-white text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                Sau
-              </button>
+            <div>
+              <p className="text-sm text-gray-700">
+                Hiển thị <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> đến <span className="font-medium">
+                  {Math.min(currentPage * itemsPerPage, (viewMode === 'active' ? expenses.length : hiddenExpenses.length))}
+                </span> trong tổng số <span className="font-medium">{viewMode === 'active' ? expenses.length : hiddenExpenses.length}</span> chi phí
+              </p>
             </div>
-            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm text-gray-700">
-                  Hiển thị <span className="font-medium">{indexOfFirstItem + 1}</span> đến <span className="font-medium">
-                    {Math.min(indexOfLastItem, expenses.length)}
-                  </span> trong tổng số <span className="font-medium">{expenses.length}</span> chi phí
-                </p>
-              </div>
-              <div>
-                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+            <div>
+              <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                <button
+                  onClick={() => paginate(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                  className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium ${
+                    currentPage === 1
+                      ? 'text-gray-300 cursor-not-allowed'
+                      : 'text-gray-500 hover:bg-gray-50'
+                  }`}
+                >
+                  <span className="sr-only">Trang trước</span>
+                  <FaChevronLeft className="h-4 w-4" />
+                </button>
+                {[...Array(totalPages).keys()].map(number => (
                   <button
-                    onClick={() => paginate(Math.max(1, currentPage - 1))}
-                    disabled={currentPage === 1}
-                    className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium ${
-                      currentPage === 1
-                        ? 'text-gray-300 cursor-not-allowed'
-                        : 'text-gray-500 hover:bg-gray-50'
+                    key={number + 1}
+                    onClick={() => paginate(number + 1)}
+                    className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                      currentPage === number + 1
+                        ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                        : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
                     }`}
                   >
-                    <span className="sr-only">Trang trước</span>
-                    &laquo;
+                    {number + 1}
                   </button>
-                  {[...Array(totalPages).keys()].map(number => (
+                ))}
+                <button
+                  onClick={() => paginate(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                  className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium ${
+                    currentPage === totalPages
+                      ? 'text-gray-300 cursor-not-allowed'
+                      : 'text-gray-500 hover:bg-gray-50'
+                  }`}
+                >
+                  <span className="sr-only">Trang sau</span>
+                  <FaChevronRight className="h-4 w-4" />
+                </button>
+              </nav>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Danh sách chi phí - Mobile */}
+      <div className="bg-white rounded-lg shadow overflow-hidden sm:hidden">
+        {loading ? (
+          <div className="p-4 text-center">
+            <FaSpinner className="inline-block animate-spin text-blue-600 text-xl" />
+            <span className="ml-2">Đang tải...</span>
+          </div>
+        ) : currentItems.length === 0 ? (
+          <div className="p-4 text-center text-gray-500">
+            {viewMode === 'active'
+              ? 'Không có dữ liệu chi phí hiển thị'
+              : 'Không có dữ liệu chi phí đã ẩn'}
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-200">
+            {currentItems.map((expense) => (
+              <div
+                key={expense._id}
+                className="p-4 hover:bg-gray-50"
+                onClick={() => handleEditExpense(expense._id)}
+              >
+                <div className="flex justify-between items-start mb-1">
+                  <div className="font-medium text-gray-900">{expense.title}</div>
+                  <div className="text-right font-medium text-red-600">
+                    {formatCurrency(expense.amount)}
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center mb-1 text-sm">
+                  <div>
+                    <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                      {getCategoryLabel(expense.category)}
+                    </span>
+                  </div>
+                  <div className="text-gray-500">
+                    {formatDate(expense.date)}
+                  </div>
+                </div>
+
+                {expense.description && (
+                  <div className="text-xs text-gray-500 mt-1 mb-2">{expense.description}</div>
+                )}
+
+                <div className="flex justify-between items-center mt-2">
+                  <div>
+                    {expense.isRecurring && (
+                      <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                        {expense.recurringPeriod === 'daily' && 'Hàng ngày'}
+                        {expense.recurringPeriod === 'weekly' && 'Hàng tuần'}
+                        {expense.recurringPeriod === 'monthly' && 'Hàng tháng'}
+                        {expense.recurringPeriod === 'yearly' && 'Hàng năm'}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex space-x-3" onClick={(e) => e.stopPropagation()}>
                     <button
-                      key={number + 1}
-                      onClick={() => paginate(number + 1)}
-                      className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                        currentPage === number + 1
-                          ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                          : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                      }`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEditExpense(expense._id);
+                      }}
+                      className="text-indigo-600"
+                      aria-label="Chỉnh sửa"
                     >
-                      {number + 1}
+                      <FaEdit size={16} />
                     </button>
-                  ))}
-                  <button
-                    onClick={() => paginate(Math.min(totalPages, currentPage + 1))}
-                    disabled={currentPage === totalPages}
-                    className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium ${
-                      currentPage === totalPages
-                        ? 'text-gray-300 cursor-not-allowed'
-                        : 'text-gray-500 hover:bg-gray-50'
-                    }`}
-                  >
-                    <span className="sr-only">Trang sau</span>
-                    &raquo;
-                  </button>
-                </nav>
+
+                    {viewMode === 'active' ? (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleHideExpense(expense._id);
+                        }}
+                        className="text-yellow-600"
+                        aria-label="Ẩn"
+                      >
+                        <FaEyeSlash size={16} />
+                      </button>
+                    ) : (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRestoreExpense(expense._id);
+                        }}
+                        className="text-green-600"
+                        aria-label="Khôi phục"
+                      >
+                        <FaEye size={16} />
+                      </button>
+                    )}
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteExpense(expense._id);
+                      }}
+                      className="text-red-600"
+                      aria-label="Xóa"
+                    >
+                      <FaTrashAlt size={16} />
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
+            ))}
+          </div>
+        )}
+
+        {/* Phân trang - Mobile */}
+        {!loading && totalPages > 1 && (
+          <div className="p-4 flex justify-between items-center border-t border-gray-200">
+            <button
+              onClick={() => paginate(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1}
+              className={`flex items-center px-3 py-1 rounded border ${
+                currentPage === 1
+                  ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                  : 'bg-white text-gray-700 border-gray-300'
+              }`}
+            >
+              <FaChevronLeft className="h-3 w-3 mr-1" />
+              <span>Trước</span>
+            </button>
+
+            <span className="text-sm text-gray-700">
+              {currentPage} / {totalPages}
+            </span>
+
+            <button
+              onClick={() => paginate(Math.min(totalPages, currentPage + 1))}
+              disabled={currentPage === totalPages}
+              className={`flex items-center px-3 py-1 rounded border ${
+                currentPage === totalPages
+                  ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                  : 'bg-white text-gray-700 border-gray-300'
+              }`}
+            >
+              <span>Sau</span>
+              <FaChevronRight className="h-3 w-3 ml-1" />
+            </button>
           </div>
         )}
       </div>

@@ -290,10 +290,20 @@ export const ExpenseService = {
     }
   },
 
-  // Lấy danh sách chi phí
+  // Lấy danh sách chi phí đang hiển thị
   getExpenses: async (params = {}) => {
     try {
       const response = await apiClient.get('/api/expenses', { params });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Lấy danh sách chi phí đã ẩn
+  getHiddenExpenses: async (params = {}) => {
+    try {
+      const response = await apiClient.get('/api/expenses/hidden', { params });
       return response.data;
     } catch (error) {
       throw error;
@@ -358,16 +368,6 @@ export const ExpenseService = {
   getExpenseReport: async (params = {}) => {
     try {
       const response = await apiClient.get('/api/reports/expenses', { params });
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
-  },
-
-  // Lấy danh sách chi phí đã ẩn
-  getHiddenExpenses: async () => {
-    try {
-      const response = await apiClient.get('/api/expenses/hidden');
       return response.data;
     } catch (error) {
       throw error;

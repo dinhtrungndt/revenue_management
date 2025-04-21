@@ -8,6 +8,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { MdOutlineProductionQuantityLimits } from 'react-icons/md';
 import { IoReturnUpBack } from 'react-icons/io5';
 import { FaMoneyBillTrendUp } from 'react-icons/fa6';
+import { GiReceiveMoney } from 'react-icons/gi';
 
 const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -81,7 +82,7 @@ const AdminLayout = () => {
                   isActive('/admin/expense-report') ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700'
                 }`}
               >
-                <FaChartLine className="mr-3 h-4 w-4" />
+                <GiReceiveMoney className="mr-3 h-4 w-4" />
                 Báo Cáo Chi Phí
               </Link>
               <Link
@@ -188,7 +189,7 @@ const AdminLayout = () => {
                   isActive('/admin/expense-report') ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700'
                 }`}
               >
-                <FaChartLine className="mr-3 h-4 w-4" />
+                <GiReceiveMoney className="mr-3 h-4 w-4" />
                 Báo Cáo Chi Phí
               </Link>
                 <Link
