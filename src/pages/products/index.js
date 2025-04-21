@@ -304,6 +304,12 @@ const ProductsPage = () => {
                   {category.label}
                 </button>
               ))}
+              <button
+                onClick={openSpaForm}
+                className="ml-auto px-2 py-1 rounded-full text-xs font-medium bg-purple-600 text-white hover:bg-purple-700"
+              >
+                <FaPaw className="inline-block mr-1" /> Spa
+              </button>
             </div>
           </div>
           <div className="flex flex-col">
