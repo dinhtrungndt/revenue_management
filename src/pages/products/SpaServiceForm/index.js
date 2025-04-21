@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { FaTimes, FaSave, FaMoneyBill, FaCreditCard } from 'react-icons/fa';
+import { FaTimes, FaSave, FaMoneyBill, FaCreditCard, FaGift } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { OrderService } from '../../../services/apiService';
 
-const SpaServiceForm = ({ onClose }) => {
+const SpaServiceForm = ({ onClose, onOrderSuccess }) => {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
@@ -12,16 +12,15 @@ const SpaServiceForm = ({ onClose }) => {
   const [price, setPrice] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [appointmentTime, setAppointmentTime] = useState('');
+  const [isGiftOrder, setIsGiftOrder] = useState(false); // Thêm state cho quà tặng
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
 
-  // Format price as VND
   const formatPrice = (price) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
   };
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -44,17 +43,18 @@ const SpaServiceForm = ({ onClose }) => {
       setLoading(true);
       setError(null);
 
-      // Gọi API tạo đơn hàng spa trực tiếp
       const orderData = {
         note: note,
         price: parseFloat(price),
         paymentMethod: paymentMethod,
-        appointmentTime: appointmentTime || null
+        appointmentTime: appointmentTime || null,
+        isGiftOrder // Thêm isGiftOrder
       };
 
       await OrderService.createSpaOrder(orderData);
 
       setSuccess(true);
+      onOrderSuccess();
 
       setTimeout(() => {
         onClose();
@@ -123,7 +123,7 @@ const SpaServiceForm = ({ onClose }) => {
             </div>
             {price && (
               <p className="mt-1 text-sm text-gray-500">
-                Thành tiền: {formatPrice(price)}
+                Thành tiền: {isGiftOrder ? '0 đ (Quà tặng)' : formatPrice(price)}
               </p>
             )}
           </div>
@@ -174,6 +174,21 @@ const SpaServiceForm = ({ onClose }) => {
                 <div className="ml-3">
                   <h4 className="text-sm font-medium text-gray-900">Chuyển khoản ngân hàng</h4>
                   <p className="text-xs text-gray-500">Chuyển khoản trước khi nhận dịch vụ</p>
+                </div>
+              </div>
+
+              <div
+                className={`flex items-center p-3 border rounded-lg cursor-pointer ${
+                  isGiftOrder ? 'border-green-500 bg-green-50' : 'border-gray-300'
+                }`}
+                onClick={() => setIsGiftOrder(!isGiftOrder)}
+              >
+                <FaGift
+                  className={`h-5 w-5 ${isGiftOrder ? 'text-green-500' : 'text-gray-400'}`}
+                />
+                <div className="ml-3">
+                  <h4 className="text-sm font-medium text-gray-900">Đặt làm quà tặng</h4>
+                  <p className="text-xs text-gray-500">Dịch vụ sẽ có giá 0đ</p>
                 </div>
               </div>
             </div>

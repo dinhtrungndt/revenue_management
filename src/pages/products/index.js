@@ -191,11 +191,11 @@ const ProductsPage = () => {
           },
         ],
         paymentMethod: paymentMethod,
+        isGiftOrder: giftData?.isGiftOrder || false
       };
 
-      // Thêm thông tin quà tặng nếu có
-      if (giftData) {
-        orderData.gift = giftData;
+      if (giftData && giftData.productId) {
+        orderData.gift = { productId: giftData.productId };
       }
 
       await OrderService.createOrder(orderData);
@@ -204,7 +204,6 @@ const ProductsPage = () => {
       setQuantity(1);
       closeProductModal();
 
-      // Cập nhật lại danh sách sản phẩm để phản ánh tồn kho mới
       fetchProductsData({
         category: selectedCategory !== 'all' ? selectedCategory : undefined,
         search: searchTerm || undefined,
@@ -212,10 +211,7 @@ const ProductsPage = () => {
       });
     } catch (err) {
       console.error('Error creating order:', err);
-
-      // Phân tích thông báo lỗi từ server để hiển thị chính xác
       let errorMessage = err.response?.data?.message || err.message || 'Đã xảy ra lỗi khi đặt hàng. Vui lòng thử lại sau.';
-
       setOrderError(errorMessage);
     } finally {
       setOrdering(false);
@@ -294,9 +290,8 @@ const ProductsPage = () => {
             <div className="flex flex-wrap gap-1.5">
               <button
                 onClick={() => handleCategoryChange('all')}
-                className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  selectedCategory === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
+                className={`px-2 py-1 rounded-full text-xs font-medium ${selectedCategory === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
               >
                 Tất cả
               </button>
@@ -304,11 +299,10 @@ const ProductsPage = () => {
                 <button
                   key={category.value}
                   onClick={() => handleCategoryChange(category.value)}
-                  className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    selectedCategory === category.value
+                  className={`px-2 py-1 rounded-full text-xs font-medium ${selectedCategory === category.value
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
+                    }`}
                 >
                   {category.label}
                 </button>
@@ -467,9 +461,8 @@ const ProductsPage = () => {
               <button
                 onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
-                className={`px-3 py-1 rounded text-sm ${
-                  currentPage === 1 ? 'bg-gray-100 text-gray-400' : 'bg-blue-100 text-blue-700'
-                }`}
+                className={`px-3 py-1 rounded text-sm ${currentPage === 1 ? 'bg-gray-100 text-gray-400' : 'bg-blue-100 text-blue-700'
+                  }`}
               >
                 Trước
               </button>
@@ -479,9 +472,8 @@ const ProductsPage = () => {
               <button
                 onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
                 disabled={currentPage === totalPages}
-                className={`px-3 py-1 rounded text-sm ${
-                  currentPage === totalPages ? 'bg-gray-100 text-gray-400' : 'bg-blue-100 text-blue-700'
-                }`}
+                className={`px-3 py-1 rounded text-sm ${currentPage === totalPages ? 'bg-gray-100 text-gray-400' : 'bg-blue-100 text-blue-700'
+                  }`}
               >
                 Sau
               </button>

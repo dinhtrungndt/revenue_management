@@ -11,14 +11,13 @@ const PayMent = ({
   setShowPaymentModal,
   ordering
 }) => {
-  // Thêm state cho tính năng quà tặng
   const [showGiftOption, setShowGiftOption] = useState(false);
   const [giftProducts, setGiftProducts] = useState([]);
   const [selectedGift, setSelectedGift] = useState(null);
+  const [isGiftOrder, setIsGiftOrder] = useState(false); // Thêm state cho quà tặng
   const [loadingGifts, setLoadingGifts] = useState(false);
   const [giftError, setGiftError] = useState(null);
 
-  // Format giá tiền
   const formatPrice = (price) => {
     return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
@@ -27,7 +26,6 @@ const PayMent = ({
     }).format(price);
   };
 
-  // Fetch sản phẩm quà tặng
   useEffect(() => {
     const fetchGiftProducts = async () => {
       try {
@@ -43,21 +41,20 @@ const PayMent = ({
       }
     };
 
-    // Chỉ fetch khi hiển thị dialog chọn quà
     if (showGiftOption) {
       fetchGiftProducts();
     }
   }, [showGiftOption]);
 
-  // Xử lý chọn quà tặng
   const handleSelectGift = (giftProduct) => {
     setSelectedGift(giftProduct);
   };
 
-  // Xử lý xác nhận thanh toán
   const handleConfirmCheckout = () => {
-    // Thêm thông tin quà tặng vào dữ liệu thanh toán
-    handleCheckout(selectedGift ? { productId: selectedGift._id } : null);
+    handleCheckout({
+      productId: selectedGift ? selectedGift._id : null,
+      isGiftOrder // Gửi isGiftOrder lên backend
+    });
   };
 
   return (
@@ -68,25 +65,22 @@ const PayMent = ({
       ></div>
 
       <div className="relative bg-white rounded-lg w-full max-w-md mx-auto p-5 shadow-xl">
-        {/* Thanh kéo để đóng trên mobile */}
         <div className="py-1 flex justify-center md:hidden mb-2">
           <div className="w-10 h-1 bg-gray-300 rounded-full"></div>
         </div>
 
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-medium text-gray-900">Chọn phương thức thanh toán</h3>
+          <h3 className="text-lg font-medium text-gray-900">Thanh toán</h3>
           <button
             type="button"
             className="text-gray-400 hover:text-gray-500 bg-white rounded-full w-8 h-8 flex items-center justify-center"
             onClick={() => setShowPaymentModal(false)}
           >
-            <span className="sr-only">Đóng</span>
             <FaTimes className="h-5 w-5" />
           </button>
         </div>
 
         {!showGiftOption ? (
-          // Màn hình chọn phương thức thanh toán
           <>
             <div className="space-y-4 mb-6">
               <div>
@@ -122,21 +116,55 @@ const PayMent = ({
                   </div>
                 </div>
               </div>
+
+              <div>
+                <div
+                  className={`flex items-center p-4 border rounded-lg cursor-pointer ${
+                    isGiftOrder ? 'border-green-500 bg-green-50' : 'border-gray-300'
+                  }`}
+                  onClick={() => setIsGiftOrder(!isGiftOrder)}
+                >
+                  <FaGift
+                    className={`h-6 w-6 ${isGiftOrder ? 'text-green-500' : 'text-gray-400'}`}
+                  />
+                  <div className="ml-3">
+                    <h4 className="text-base font-medium text-gray-900">Đặt làm quà tặng</h4>
+                    <p className="text-sm text-gray-500">Đơn hàng sẽ có giá 0đ</p>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div className="mt-5">
+            {/* <div className="mt-5">
               <button
                 type="button"
                 className="inline-flex justify-center w-full rounded-md border border-transparent shadow-sm px-4 py-3 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                 onClick={() => setShowGiftOption(true)}
               >
                 <FaGift className="mr-2 h-5 w-5" />
-                Bạn có muốn tặng quà kèm theo không?
+                Bạn có muốn chọn quà tặng kèm theo không?
+              </button>
+            </div> */}
+
+            <div className="mt-4">
+              <button
+                type="button"
+                className="inline-flex justify-center w-full rounded-md border border-transparent shadow-sm px-4 py-3 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                onClick={handleConfirmCheckout}
+                disabled={ordering}
+              >
+                {ordering ? (
+                  <>
+                    <FaSpinner className="animate-spin inline mr-2" />
+                    Đang xử lý...
+                  </>
+                ) : (
+                  'Đặt hàng ngay'
+                )}
               </button>
             </div>
           </>
         ) : (
-          // Màn hình chọn quà tặng
           <>
             <div className="mb-4">
               <h4 className="text-base font-medium text-gray-900 mb-2 flex items-center">
