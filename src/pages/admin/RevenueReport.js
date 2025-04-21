@@ -54,7 +54,7 @@ const RevenueReport = () => {
   }
 
   return (
-    <div className="container mx-auto px-4">
+    <div className="container mx-auto px-2 sm:px-4">
       {/* Filters */}
       <div className="bg-white rounded-lg shadow-md mb-6">
         <div className="p-4 border-b border-gray-200">
@@ -142,9 +142,9 @@ const RevenueReport = () => {
               <p className="text-sm text-gray-500">Tổng số đơn hàng</p>
               <p className="text-lg font-semibold">{revenueReport.summary.totalOrders}</p>
             </div>
-            </div>
           </div>
         </div>
+      </div>
 
       {/* Revenue Chart */}
       <div className="bg-white rounded-lg shadow-md mb-6">
@@ -172,63 +172,83 @@ const RevenueReport = () => {
           <h2 className="text-lg font-semibold">Doanh thu theo danh mục</h2>
         </div>
         <div className="p-4">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Danh mục
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Số lượng bán
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Doanh thu
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Tỷ lệ
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {revenueReport.categoryStats.length > 0 ? (
-                  revenueReport.categoryStats.map((stats) => (
-                    <tr key={stats.category}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                          {stats.category === 'dog' ? 'Chó' : 'Mèo'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {stats.quantity}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatCurrency(stats.revenue)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="w-full bg-gray-200 rounded-full h-2.5">
-                            <div
-                              className="bg-blue-600 h-2.5 rounded-full"
-                              style={{ width: `${(stats.revenue / revenueReport.summary.totalRevenue) * 100}%` }}
-                            ></div>
-                          </div>
-                          <span className="ml-2 text-sm text-gray-500">
-                            {Math.round((stats.revenue / revenueReport.summary.totalRevenue) * 100)}%
-                          </span>
-                        </div>
+          <div className="flex items-center bg-gray-50 rounded text-xs sm:text-sm p-2">
+            <span className="text-gray-500 px-1">Kéo bảng ngang để xem thêm dữ liệu</span>
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </div>
+          <div className="overflow-x-auto -mx-4 sm:mx-0 mt-2">
+            <div className="inline-block min-w-full align-middle px-4 sm:px-0">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th scope="col" className="px-4 py-2 sm:px-6 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                      Danh mục
+                    </th>
+                    <th scope="col" className="px-4 py-2 sm:px-6 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                      Số lượng
+                    </th>
+                    <th scope="col" className="px-4 py-2 sm:px-6 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                      Giá nhập
+                    </th>
+                    <th scope="col" className="px-4 py-2 sm:px-6 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                      Giá bán
+                    </th>
+                    <th scope="col" className="px-4 py-2 sm:px-6 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                      Lợi nhuận
+                    </th>
+                    <th scope="col" className="px-4 py-2 sm:px-6 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                      Chi phí
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {revenueReport.categoryStats.length > 0 ? (
+                    revenueReport.categoryStats.map((stats) => {
+                      // Giả định giá nhập trung bình (importPrice) là 70% giá bán
+                      const avgImportPrice = stats.revenue * 0.7 / stats.quantity;
+                      const totalImportCost = avgImportPrice * stats.quantity;
+                      // Lợi nhuận = Doanh thu - Tổng giá nhập
+                      const profit = stats.revenue - totalImportCost;
+                      // Chi phí khác (vận chuyển, marketing, v.v.) giả định là 10% doanh thu
+                      const otherCost = stats.revenue * 0.1;
+
+                      return (
+                        <tr key={stats.category}>
+                          <td className="px-4 py-2 sm:px-6 sm:py-4 whitespace-nowrap">
+                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                              {stats.category === 'dog' ? 'Chó' : 'Mèo'}
+                            </span>
+                          </td>
+                          <td className="px-4 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-sm text-gray-500">
+                            {stats.quantity}
+                          </td>
+                          <td className="px-4 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-sm text-gray-500">
+                            {formatCurrency(avgImportPrice)}
+                          </td>
+                          <td className="px-4 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-sm text-gray-500">
+                            {formatCurrency(stats.revenue / stats.quantity)}
+                          </td>
+                          <td className="px-4 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-sm text-gray-500">
+                            {formatCurrency(profit)}
+                          </td>
+                          <td className="px-4 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-sm text-gray-500">
+                            {formatCurrency(otherCost)}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan="6" className="px-4 py-2 sm:px-6 sm:py-4 text-center text-sm text-gray-500">
+                        Không có dữ liệu
                       </td>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="4" className="px-6 py-4 text-center text-sm text-gray-500">
-                      Không có dữ liệu
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
@@ -239,45 +259,80 @@ const RevenueReport = () => {
           <h2 className="text-lg font-semibold">Chi tiết doanh thu {interval === 'daily' ? 'theo ngày' : 'theo tháng'}</h2>
         </div>
         <div className="p-4">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {interval === 'daily' ? 'Ngày' : 'Tháng'}
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Số đơn hàng
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Doanh thu
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {revenueReport.timeSeries.length > 0 ? (
-                  revenueReport.timeSeries.map((item) => (
-                    <tr key={interval === 'daily' ? item.date : item.month}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {interval === 'daily' ? item.date : item.month}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {item.orders}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatCurrency(item.revenue)}
+          <div className="flex items-center bg-gray-50 rounded text-xs sm:text-sm p-2">
+            <span className="text-gray-500 px-1">Kéo bảng ngang để xem thêm dữ liệu</span>
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </div>
+          <div className="overflow-x-auto -mx-4 sm:mx-0 mt-2">
+            <div className="inline-block min-w-full align-middle px-4 sm:px-0">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th scope="col" className="px-4 py-2 sm:px-6 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                      {interval === 'daily' ? 'Ngày' : 'Tháng'}
+                    </th>
+                    <th scope="col" className="px-4 py-2 sm:px-6 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                      Số lượng
+                    </th>
+                    <th scope="col" className="px-4 py-2 sm:px-6 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                      Giá nhập
+                    </th>
+                    <th scope="col" className="px-4 py-2 sm:px-6 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                      Giá bán
+                    </th>
+                    <th scope="col" className="px-4 py-2 sm:px-6 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                      Lợi nhuận
+                    </th>
+                    <th scope="col" className="px-4 py-2 sm:px-6 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                      Chi phí
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {revenueReport.timeSeries.length > 0 ? (
+                    revenueReport.timeSeries.map((item) => {
+                      // Giả định giá nhập trung bình (importPrice) là 70% doanh thu chia cho số đơn hàng
+                      const avgImportPrice = item.revenue * 0.7 / (item.orders || 1);
+                      // Lợi nhuận = Doanh thu - Tổng giá nhập
+                      const profit = item.revenue - (avgImportPrice * item.orders);
+                      // Chi phí khác (vận chuyển, marketing, v.v.) giả định là 10% doanh thu
+                      const otherCost = item.revenue * 0.1;
+
+                      return (
+                        <tr key={interval === 'daily' ? item.date : item.month}>
+                          <td className="px-4 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-sm text-gray-500">
+                            {interval === 'daily' ? item.date : item.month}
+                          </td>
+                          <td className="px-4 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-sm text-gray-500">
+                            {item.orders}
+                          </td>
+                          <td className="px-4 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-sm text-gray-500">
+                            {formatCurrency(avgImportPrice)}
+                          </td>
+                          <td className="px-4 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-sm text-gray-500">
+                            {formatCurrency(item.revenue / (item.orders || 1))}
+                          </td>
+                          <td className="px-4 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-sm text-gray-500">
+                            {formatCurrency(profit)}
+                          </td>
+                          <td className="px-4 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-sm text-gray-500">
+                            {formatCurrency(otherCost)}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan="6" className="px-4 py-2 sm:px-6 sm:py-4 text-center text-sm text-gray-500">
+                        Không có dữ liệu
                       </td>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="3" className="px-6 py-4 text-center text-sm text-gray-500">
-                      Không có dữ liệu
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>

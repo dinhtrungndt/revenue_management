@@ -11,6 +11,7 @@ const EditProductDialog = ({ productId, onClose, onProductUpdated }) => {
   const [formData, setFormData] = useState({
     name: '',
     category: '',
+    importPrice: '', // Thêm trường giá nhập
     price: '',
     description: '',
     weight: '',
@@ -38,6 +39,7 @@ const EditProductDialog = ({ productId, onClose, onProductUpdated }) => {
         setFormData({
           name: product.name || '',
           category: product.category || 'dog',
+          importPrice: product.importPrice || '', // Lấy giá nhập từ API
           price: product.price || '',
           description: product.description || '',
           weight: product.weight || '',
@@ -112,6 +114,7 @@ const EditProductDialog = ({ productId, onClose, onProductUpdated }) => {
       const data = new FormData();
       data.append('name', formData.name);
       data.append('category', formData.category);
+      data.append('importPrice', parseFloat(formData.importPrice)); // Thêm importPrice
       data.append('price', parseFloat(formData.price));
       data.append('description', formData.description);
       if (formData.category !== 'spa') {
@@ -142,6 +145,25 @@ const EditProductDialog = ({ productId, onClose, onProductUpdated }) => {
   const formatPrice = (price) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', minimumFractionDigits: 0 }).format(price);
   };
+
+  // Tính lợi nhuận dự kiến
+  const calculateProfit = () => {
+    if (formData.importPrice && formData.price) {
+      const importPrice = parseFloat(formData.importPrice);
+      const salePrice = parseFloat(formData.price);
+      if (!isNaN(importPrice) && !isNaN(salePrice)) {
+        const profit = salePrice - importPrice;
+        const profitPercent = (profit / importPrice) * 100;
+        return {
+          amount: formatPrice(profit),
+          percent: profitPercent.toFixed(2)
+        };
+      }
+    }
+    return { amount: '-', percent: '-' };
+  };
+
+  const profit = calculateProfit();
 
   const stopPropagation = (e) => {
     e.stopPropagation();
@@ -251,9 +273,33 @@ const EditProductDialog = ({ productId, onClose, onProductUpdated }) => {
               </div>
             </div>
             <div className="form-group">
+              <label htmlFor="importPrice" className="flex items-center text-xs sm:text-sm font-medium text-gray-700 mb-1.5">
+                <FaDollarSign className="mr-1.5 text-blue-500 text-xs" />
+                Giá nhập (VND)
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  id="importPrice"
+                  name="importPrice"
+                  value={formData.importPrice}
+                  onChange={handleInputChange}
+                  min="0"
+                  className="w-full border border-gray-300 rounded-lg py-1.5 sm:py-2 px-2 sm:px-3 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
+                  placeholder="Nhập giá nhập sản phẩm"
+                  required
+                />
+                {formData.importPrice && (
+                  <div className="mt-1 text-right text-xs text-blue-600 font-medium">
+                    {formatPrice(formData.importPrice)}
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="form-group">
               <label htmlFor="price" className="flex items-center text-xs sm:text-sm font-medium text-gray-700 mb-1.5">
                 <FaDollarSign className="mr-1.5 text-blue-500 text-xs" />
-                Giá (VND)
+                Giá bán (VND)
               </label>
               <div className="relative">
                 <input
@@ -264,7 +310,7 @@ const EditProductDialog = ({ productId, onClose, onProductUpdated }) => {
                   onChange={handleInputChange}
                   min="0"
                   className="w-full border border-gray-300 rounded-lg py-1.5 sm:py-2 px-2 sm:px-3 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
-                  placeholder="Nhập giá sản phẩm"
+                  placeholder="Nhập giá bán sản phẩm"
                   required
                 />
                 {formData.price && (
@@ -274,6 +320,19 @@ const EditProductDialog = ({ productId, onClose, onProductUpdated }) => {
                 )}
               </div>
             </div>
+            {formData.importPrice && formData.price && (
+              <div className="form-group">
+                <div className="bg-green-50 border border-green-100 rounded-lg p-3">
+                  <p className="text-sm font-medium text-green-800 mb-1">Lợi nhuận dự kiến:</p>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-green-700">{profit.amount}</span>
+                    <span className="text-sm font-medium bg-green-100 px-2 py-0.5 rounded-full text-green-800">
+                      {profit.percent}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="form-group">
               <label htmlFor="description" className="flex items-center text-xs sm:text-sm font-medium text-gray-700 mb-1.5">
                 <FaPencilAlt className="mr-1.5 text-blue-500 text-xs" />
