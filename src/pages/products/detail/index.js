@@ -1,5 +1,5 @@
 import { APP_CONFIG } from '../../../config';
-import { FaTimes, FaPlus, FaMinus, FaExclamationTriangle, FaShoppingCart } from 'react-icons/fa';
+import { FaTimes, FaPlus, FaMinus, FaExclamationTriangle, FaShoppingCart, FaGift } from 'react-icons/fa';
 
 const ProductDetailPage = ({
   selectedProduct,
@@ -13,7 +13,6 @@ const ProductDetailPage = ({
   orderError,
   showPaymentModal
 }) => {
-  // Format price as VND
   const formatPrice = (price) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
   };
@@ -24,9 +23,7 @@ const ProductDetailPage = ({
         <div className="fixed inset-0 transition-opacity" aria-hidden="true">
           <div className="absolute inset-0 bg-gray-500 opacity-75" onClick={closeProductModal}></div>
         </div>
-
         <div className="inline-block align-bottom bg-white rounded-t-xl text-left overflow-hidden shadow-xl transform transition-all w-full max-w-xs mx-auto">
-          {/* Nút đóng ở góc trên bên phải */}
           <div className="absolute top-2 right-2 z-50">
             <button
               type="button"
@@ -36,35 +33,24 @@ const ProductDetailPage = ({
               <FaTimes className="h-4 w-4" />
             </button>
           </div>
-
-          {/* Thanh kéo để đóng modal */}
           <div className="py-1 flex justify-center">
             <div className="w-8 h-1 bg-gray-300 rounded-full"></div>
           </div>
-
           <div className="bg-white px-3 pt-3 pb-2">
-            {/* Hình ảnh sản phẩm */}
             <div className="bg-gray-100 flex items-center justify-center p-2 mb-3 rounded">
               <img
                 src={selectedProduct.image || `https://ui-avatars.com/api/?background=EBF4FF&color=4F46E5&bold=true&name=${encodeURIComponent(selectedProduct.name)}`}
                 alt={selectedProduct.name}
                 className="object-cover h-32 w-32"
               />
-
             </div>
-
-            {/* Thông tin sản phẩm */}
             <div>
-              {/* Tên và giá */}
               <h3 className="text-base font-medium text-gray-900">{selectedProduct.name}</h3>
               <p className="text-lg font-bold text-red-600 mb-1">{formatPrice(selectedProduct.price)}</p>
-
-              {/* Danh mục và trạng thái */}
               <div className="flex items-center justify-between mb-2">
                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                   {APP_CONFIG.PRODUCT_CATEGORIES.find(c => c.value === selectedProduct.category)?.label || selectedProduct.category}
                 </span>
-
                 {selectedProduct.stock > 0 ? (
                   selectedProduct.stock < 10 ? (
                     <span className="text-xs text-yellow-600">
@@ -77,13 +63,22 @@ const ProductDetailPage = ({
                   </span>
                 )}
               </div>
-
-              {/* Mô tả sản phẩm - ngắn gọn hơn */}
               <div className="mb-3 text-xs text-gray-500">
                 {selectedProduct.description}
               </div>
-
-              {/* Bộ chọn số lượng */}
+              {selectedProduct.gift?.enabled && (
+                <div className="mb-3 bg-green-50 p-2 rounded-lg">
+                  <div className="flex items-center">
+                    <FaGift className="h-4 w-4 text-green-500 mr-2" />
+                    <span className="text-xs font-medium text-green-700">
+                      Tặng kèm: {selectedProduct.gift.description}
+                    </span>
+                  </div>
+                  <div className="text-xs text-green-600 mt-1">
+                    Số lượng còn: {selectedProduct.gift.stock}
+                  </div>
+                </div>
+              )}
               {selectedProduct.stock > 0 && (
                 <div className="mb-3">
                   <div className="flex items-center justify-between">
@@ -113,21 +108,15 @@ const ProductDetailPage = ({
                       </button>
                     </div>
                   </div>
-
-                  {/* Hàng tồn kho */}
                   <div className="mt-1 text-xs text-yellow-600">
                     Còn {selectedProduct.stock} sản phẩm
                   </div>
-
-                  {/* Thành tiền */}
                   <div className="flex justify-between items-center mt-2">
                     <span className="text-xs text-gray-500">Thành tiền:</span>
                     <p className="text-base font-bold text-red-600">{formatPrice(selectedProduct.price * quantity)}</p>
                   </div>
                 </div>
               )}
-
-              {/* Thông báo lỗi */}
               {orderError && !showPaymentModal && (
                 <div className="mb-3 bg-red-50 border-l-2 border-red-500 p-2 rounded-r text-xs">
                   <div className="flex">
@@ -142,8 +131,6 @@ const ProductDetailPage = ({
               )}
             </div>
           </div>
-
-          {/* Nút hành động */}
           <div className="bg-white border-t border-gray-200 px-3 py-2 flex space-x-2">
             <button
               type="button"
@@ -152,14 +139,12 @@ const ProductDetailPage = ({
             >
               Đóng
             </button>
-
             {selectedProduct.stock > 0 ? (
               <button
                 type="button"
                 onClick={handleBuyNow}
                 disabled={ordering || selectedProduct.stock === 0}
-                className={`w-1/2 inline-flex justify-center items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none ${ordering ? 'opacity-70 cursor-not-allowed' : ''
-                  }`}
+                className={`w-1/2 inline-flex justify-center items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none ${ordering ? 'opacity-70 cursor-not-allowed' : ''}`}
               >
                 <FaShoppingCart className="mr-1.5 h-3 w-3" />
                 Mua ngay

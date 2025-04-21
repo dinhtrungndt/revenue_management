@@ -1,7 +1,8 @@
+// components/admin/AddProducts.js
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaTimes, FaSave, FaUpload, FaSpinner, FaTag, FaLayerGroup, FaDollarSign,
-  FaPencilAlt, FaWeightHanging, FaBoxOpen, FaStar, FaCamera, FaShoppingCart } from 'react-icons/fa';
+  FaPencilAlt, FaWeightHanging, FaBoxOpen, FaStar, FaCamera, FaGift } from 'react-icons/fa';
 import { ProductService } from '../../../../services/apiService';
 import { APP_CONFIG } from '../../../../config';
 import { useAuth } from '../../../../contexts/AuthContext';
@@ -10,30 +11,30 @@ const AddProducts = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
 
-  // State cho form
   const [formData, setFormData] = useState({
     name: '',
     category: 'dog',
-    importPrice: '', // Giá nhập
-    price: '',       // Giá bán
+    importPrice: '',
+    price: '',
     description: '',
     weight: '',
     stock: '',
     featured: false,
     image: null,
+    giftEnabled: false,
+    giftDescription: '',
+    giftStock: '',
   });
   const [previewImage, setPreviewImage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
 
-  // Kiểm tra quyền admin
   if (!isAuthenticated || user?.role !== 'admin') {
     navigate('/login', { state: { from: '/admin/list-products' } });
     return null;
   }
 
-  // Xử lý thay đổi input
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
@@ -42,7 +43,6 @@ const AddProducts = () => {
     }));
   };
 
-  // Xử lý chọn file ảnh
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -51,7 +51,6 @@ const AddProducts = () => {
     }
   };
 
-  // Xử lý submit form
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -62,24 +61,22 @@ const AddProducts = () => {
       const data = new FormData();
       data.append('name', formData.name);
       data.append('category', formData.category);
-
-      // Chuyển đổi giá nhập và giá bán sang số
       data.append('importPrice', parseFloat(formData.importPrice));
       data.append('price', parseFloat(formData.price));
-
       data.append('description', formData.description);
-
       if (formData.category !== 'spa') {
         data.append('weight', formData.weight);
-        // Đảm bảo giá trị stock là số nguyên
-        const stockValue = parseInt(formData.stock, 10);
-        data.append('stock', stockValue);
+        data.append('stock', parseInt(formData.stock, 10));
       }
-
       data.append('featured', formData.featured);
-
       if (formData.image) {
         data.append('image', formData.image);
+      }
+      // Thêm thông tin gift
+      data.append('giftEnabled', formData.giftEnabled);
+      if (formData.giftEnabled) {
+        data.append('giftDescription', formData.giftDescription);
+        data.append('giftStock', parseInt(formData.giftStock, 10));
       }
 
       await ProductService.createProduct(data);
@@ -96,10 +93,12 @@ const AddProducts = () => {
           stock: '',
           featured: false,
           image: null,
+          giftEnabled: false,
+          giftDescription: '',
+          giftStock: '',
         });
         setPreviewImage(null);
       }, 2000);
-
     } catch (err) {
       console.error('Error creating product:', err);
       setError(err.response?.data?.message || 'Đã xảy ra lỗi khi thêm sản phẩm');
@@ -108,12 +107,10 @@ const AddProducts = () => {
     }
   };
 
-  // Format price
   const formatPrice = (price) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
   };
 
-  // Tính lợi nhuận dự kiến
   const calculateProfit = () => {
     if (formData.importPrice && formData.price) {
       const importPrice = parseFloat(formData.importPrice);
@@ -135,16 +132,11 @@ const AddProducts = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-gray-100 px-4 py-6">
       <div className="max-w-lg mx-auto">
-        {/* Thông báo lỗi */}
         {error && (
           <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-lg shadow-md animate-pulse">
             <div className="flex items-start">
               <svg className="h-5 w-5 text-red-500 mr-3 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                  clipRule="evenodd"
-                />
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
               </svg>
               <div>
                 <h3 className="text-sm font-medium text-red-800">Lỗi!</h3>
@@ -153,17 +145,11 @@ const AddProducts = () => {
             </div>
           </div>
         )}
-
-        {/* Thông báo thành công */}
         {success && (
           <div className="mb-6 p-4 bg-green-50 border-l-4 border-green-500 rounded-lg shadow-md animate-pulse">
             <div className="flex items-start">
               <svg className="h-5 w-5 text-green-500 mr-3 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                  clipRule="evenodd"
-                />
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
               <div>
                 <h3 className="text-sm font-medium text-green-800">Thành công!</h3>
@@ -172,25 +158,14 @@ const AddProducts = () => {
             </div>
           </div>
         )}
-
-        {/* Form */}
-        <form
-          onSubmit={handleSubmit}
-          className="bg-white shadow-xl rounded-2xl overflow-hidden"
-        >
-          {/* Form header */}
+        <form onSubmit={handleSubmit} className="bg-white shadow-xl rounded-2xl overflow-hidden">
           <div className="bg-blue-600 text-white p-4 flex items-center justify-center">
             <FaTag className="mr-2 text-white text-lg" />
             <h2 className="text-lg font-medium">Thông tin sản phẩm</h2>
           </div>
-
           <div className="p-5 space-y-5">
-            {/* Tên sản phẩm */}
             <div className="form-group">
-              <label
-                htmlFor="name"
-                className="flex items-center text-sm font-medium text-gray-700 mb-2"
-              >
+              <label htmlFor="name" className="flex items-center text-sm font-medium text-gray-700 mb-2">
                 <FaTag className="mr-2 text-blue-500" />
                 Tên sản phẩm
               </label>
@@ -205,13 +180,8 @@ const AddProducts = () => {
                 required
               />
             </div>
-
-            {/* Danh mục */}
             <div className="form-group">
-              <label
-                htmlFor="category"
-                className="flex items-center text-sm font-medium text-gray-700 mb-2"
-              >
+              <label htmlFor="category" className="flex items-center text-sm font-medium text-gray-700 mb-2">
                 <FaLayerGroup className="mr-2 text-blue-500" />
                 Danh mục
               </label>
@@ -237,14 +207,9 @@ const AddProducts = () => {
                 </div>
               </div>
             </div>
-
-            {/* Giá nhập */}
             <div className="form-group">
-              <label
-                htmlFor="importPrice"
-                className="flex items-center text-sm font-medium text-gray-700 mb-2"
-              >
-                <FaShoppingCart className="mr-2 text-blue-500" />
+              <label htmlFor="importPrice" className="flex items-center text-sm font-medium text-gray-700 mb-2">
+                <FaDollarSign className="mr-2 text-blue-500" />
                 Giá nhập (VND)
               </label>
               <div className="relative">
@@ -266,13 +231,8 @@ const AddProducts = () => {
                 )}
               </div>
             </div>
-
-            {/* Giá bán */}
             <div className="form-group">
-              <label
-                htmlFor="price"
-                className="flex items-center text-sm font-medium text-gray-700 mb-2"
-              >
+              <label htmlFor="price" className="flex items-center text-sm font-medium text-gray-700 mb-2">
                 <FaDollarSign className="mr-2 text-blue-500" />
                 Giá bán (VND)
               </label>
@@ -295,8 +255,6 @@ const AddProducts = () => {
                 )}
               </div>
             </div>
-
-            {/* Hiển thị lợi nhuận dự kiến */}
             {formData.importPrice && formData.price && (
               <div className="form-group">
                 <div className="bg-green-50 border border-green-100 rounded-lg p-3">
@@ -310,13 +268,8 @@ const AddProducts = () => {
                 </div>
               </div>
             )}
-
-            {/* Mô tả */}
             <div className="form-group">
-              <label
-                htmlFor="description"
-                className="flex items-center text-sm font-medium text-gray-700 mb-2"
-              >
+              <label htmlFor="description" className="flex items-center text-sm font-medium text-gray-700 mb-2">
                 <FaPencilAlt className="mr-2 text-blue-500" />
                 Mô tả
               </label>
@@ -331,56 +284,44 @@ const AddProducts = () => {
                 required
               />
             </div>
-
-            {/* Cân nặng */}
             {formData.category !== 'spa' && (
-              <div className="form-group">
-                <label
-                  htmlFor="weight"
-                  className="flex items-center text-sm font-medium text-gray-700 mb-2"
-                >
-                  <FaWeightHanging className="mr-2 text-blue-500" />
-                  Cân nặng
-                </label>
-                <input
-                  type="text"
-                  id="weight"
-                  name="weight"
-                  value={formData.weight}
-                  onChange={handleInputChange}
-                  className="w-full border border-gray-300 rounded-lg py-3 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-all duration-200"
-                  placeholder="VD: 2-3kg, 300g, 1.5kg,..."
-                  required
-                />
-              </div>
+              <>
+                <div className="form-group">
+                  <label htmlFor="weight" className="flex items-center text-sm font-medium text-gray-700 mb-2">
+                    <FaWeightHanging className="mr-2 text-blue-500" />
+                    Cân nặng
+                  </label>
+                  <input
+                    type="text"
+                    id="weight"
+                    name="weight"
+                    value={formData.weight}
+                    onChange={handleInputChange}
+                    className="w-full border border-gray-300 rounded-lg py-3 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-all duration-200"
+                    placeholder="VD: 2-3kg, 300g, 1.5kg,..."
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="stock" className="flex items-center text-sm font-medium text-gray-700 mb-2">
+                    <FaBoxOpen className="mr-2 text-blue-500" />
+                    Số lượng tồn kho
+                  </label>
+                  <input
+                    type="number"
+                    id="stock"
+                    name="stock"
+                    value={formData.stock}
+                    onChange={handleInputChange}
+                    min="0"
+                    step="1"
+                    className="w-full border border-gray-300 rounded-lg py-3 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-all duration-200"
+                    placeholder="Nhập số lượng tồn kho"
+                    required
+                  />
+                </div>
+              </>
             )}
-
-            {/* Số lượng tồn kho */}
-            {formData.category !== 'spa' && (
-              <div className="form-group">
-                <label
-                  htmlFor="stock"
-                  className="flex items-center text-sm font-medium text-gray-700 mb-2"
-                >
-                  <FaBoxOpen className="mr-2 text-blue-500" />
-                  Số lượng tồn kho
-                </label>
-                <input
-                  type="number"
-                  id="stock"
-                  name="stock"
-                  value={formData.stock}
-                  onChange={handleInputChange}
-                  min="0"
-                  step="1" // Đảm bảo chỉ cho phép số nguyên
-                  className="w-full border border-gray-300 rounded-lg py-3 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-all duration-200"
-                  placeholder="Nhập số lượng tồn kho"
-                  required
-                />
-              </div>
-            )}
-
-            {/* Nổi bật */}
             <div className="form-group">
               <div className="flex items-center bg-gray-50 p-3 rounded-lg border border-gray-200">
                 <input
@@ -391,26 +332,71 @@ const AddProducts = () => {
                   onChange={handleInputChange}
                   className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                 />
-                <label
-                  htmlFor="featured"
-                  className="ml-3 flex items-center text-sm text-gray-700"
-                >
+                <label htmlFor="featured" className="ml-3 flex items-center text-sm text-gray-700">
                   <FaStar className="mr-2 text-yellow-500" />
                   Đánh dấu là sản phẩm nổi bật
                 </label>
               </div>
             </div>
-
-            {/* Upload ảnh */}
             <div className="form-group">
-              <label
-                htmlFor="image"
-                className="flex items-center text-sm font-medium text-gray-700 mb-2"
-              >
+              <div className="flex items-center bg-gray-50 p-3 rounded-lg border border-gray-200">
+                <input
+                  id="giftEnabled"
+                  name="giftEnabled"
+                  type="checkbox"
+                  checked={formData.giftEnabled}
+                  onChange={handleInputChange}
+                  className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="giftEnabled" className="ml-3 flex items-center text-sm text-gray-700">
+                  <FaGift className="mr-2 text-green-500" />
+                  Kích hoạt sản phẩm tặng kèm
+                </label>
+              </div>
+              {formData.giftEnabled && (
+                <div className="mt-3 space-y-3">
+                  <div>
+                    <label htmlFor="giftDescription" className="flex items-center text-sm font-medium text-gray-700 mb-2">
+                      <FaPencilAlt className="mr-2 text-blue-500" />
+                      Mô tả sản phẩm tặng kèm
+                    </label>
+                    <textarea
+                      id="giftDescription"
+                      name="giftDescription"
+                      rows="2"
+                      value={formData.giftDescription}
+                      onChange={handleInputChange}
+                      className="w-full border border-gray-300 rounded-lg py-3 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-all duration-200 resize-none"
+                      placeholder="VD: Bình nước 500ml, đồ chơi nhỏ,..."
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="giftStock" className="flex items-center text-sm font-medium text-gray-700 mb-2">
+                      <FaBoxOpen className="mr-2 text-blue-500" />
+                      Số lượng tồn kho của sản phẩm tặng kèm
+                    </label>
+                    <input
+                      type="number"
+                      id="giftStock"
+                      name="giftStock"
+                      value={formData.giftStock}
+                      onChange={handleInputChange}
+                      min="0"
+                      step="1"
+                      className="w-full border border-gray-300 rounded-lg py-3 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-all duration-200"
+                      placeholder="Nhập số lượng tồn kho"
+                      required
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="form-group">
+              <label htmlFor="image" className="flex items-center text-sm font-medium text-gray-700 mb-2">
                 <FaCamera className="mr-2 text-blue-500" />
                 Hình ảnh sản phẩm
               </label>
-
               {!previewImage ? (
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-blue-500 transition-all duration-200"
                   onClick={() => document.getElementById('image').click()}>
@@ -450,8 +436,6 @@ const AddProducts = () => {
               )}
             </div>
           </div>
-
-          {/* Nút điều khiển */}
           <div className="bg-gray-50 px-6 py-4 flex flex-col sm:flex-row gap-3 border-t">
             <button
               type="button"
@@ -482,8 +466,6 @@ const AddProducts = () => {
             </button>
           </div>
         </form>
-
-        {/* Footer */}
         <div className="mt-6 text-center text-gray-500 text-xs">
           © {new Date().getFullYear()} Pet Shop Admin System
         </div>
