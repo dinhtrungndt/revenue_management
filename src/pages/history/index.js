@@ -234,7 +234,8 @@ const OrderHistoryPage = () => {
                         {item.spaNote && (
                           <div className="mt-1 text-xs text-gray-500">Ghi chú: {item.spaNote}</div>
                         )}
-                        {item.gift?.enabled && (
+                        {/* Hiển thị thông tin quà tặng nếu có */}
+                        {item.gift && item.gift.enabled && (
                           <div className="mt-1 text-xs text-green-600 flex items-center">
                             <FaGift className="mr-1 h-3 w-3" />
                             Tặng kèm: {item.gift.description}

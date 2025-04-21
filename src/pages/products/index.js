@@ -1,4 +1,3 @@
-// components/user/ProductsPage.js
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaSearch, FaFilter, FaSortAmountDown, FaSortAmountUp, FaPaw, FaGift } from 'react-icons/fa';
@@ -169,15 +168,19 @@ const ProductsPage = () => {
       navigate('/login', { state: { from: `/products` } });
       return;
     }
+
+    // Kiểm tra số lượng sản phẩm trước
     if (!selectedProduct || selectedProduct.stock < quantity) {
-      setOrderError('Sản phẩm không đủ số lượng trong kho');
+      setOrderError(`Sản phẩm ${selectedProduct.name} không đủ số lượng. Hiện có ${selectedProduct.stock} sản phẩm.`);
       return;
     }
-    // Kiểm tra số lượng gift nếu có
+
+    // Kiểm tra quà tặng riêng biệt (không gây nhầm lẫn với kiểm tra sản phẩm)
     if (selectedProduct.gift?.enabled && selectedProduct.gift.stock < quantity) {
-      setOrderError(`Sản phẩm tặng kèm "${selectedProduct.gift.description}" không đủ số lượng`);
-      return;
+      // Không ngăn việc mua hàng, chỉ thông báo
+      console.log(`Quà tặng không đủ số lượng. Hiện có ${selectedProduct.gift.stock} quà tặng.`);
     }
+
     setShowPaymentModal(true);
   };
 
@@ -185,6 +188,7 @@ const ProductsPage = () => {
     try {
       setOrdering(true);
       setOrderError(null);
+
       const orderData = {
         products: [
           {
@@ -194,11 +198,13 @@ const ProductsPage = () => {
         ],
         paymentMethod: paymentMethod,
       };
+
       await OrderService.createOrder(orderData);
       setOrderSuccess(true);
       setShowPaymentModal(false);
       setQuantity(1);
       closeProductModal();
+
       // Cập nhật lại danh sách sản phẩm để phản ánh tồn kho mới
       fetchProductsData({
         category: selectedCategory !== 'all' ? selectedCategory : undefined,
@@ -207,7 +213,17 @@ const ProductsPage = () => {
       });
     } catch (err) {
       console.error('Error creating order:', err);
-      setOrderError(err.response?.data?.message || err.message || 'Đã xảy ra lỗi khi đặt hàng. Vui lòng thử lại sau.');
+
+      // Phân tích thông báo lỗi từ server để hiển thị chính xác
+      let errorMessage = err.response?.data?.message || err.message || 'Đã xảy ra lỗi khi đặt hàng. Vui lòng thử lại sau.';
+
+      if (errorMessage.includes('quà tặng')) {
+        errorMessage = `⚠️ ${errorMessage} (Bạn có thể mua sản phẩm mà không có quà)`;
+      } else if (errorMessage.includes('sản phẩm không đủ số lượng')) {
+        errorMessage = `❌ ${errorMessage}`;
+      }
+
+      setOrderError(errorMessage);
     } finally {
       setOrdering(false);
     }
