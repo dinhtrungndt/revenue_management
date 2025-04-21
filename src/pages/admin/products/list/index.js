@@ -1,3 +1,4 @@
+// components/admin/AdminProductsPage.js
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
@@ -16,7 +17,8 @@ import {
   FaCheck,
   FaTimes,
   FaEllipsisV,
-  FaTrashAlt
+  FaTrashAlt,
+  FaGift,
 } from 'react-icons/fa';
 import { fetchProducts } from '../../../../stores/redux/actions/adminActions.js';
 import { APP_CONFIG } from '../../../../config/index.js';
@@ -156,25 +158,28 @@ const AdminProductsPage = () => {
 
   // Xử lý hoàn thành chỉnh sửa sản phẩm
   const handleProductUpdated = () => {
-    dispatch(fetchProducts({
-      category: selectedCategory !== 'all' ? selectedCategory : undefined,
-      search: searchTerm || undefined,
-      sort: sortField,
-      order: sortOrder
-    }));
+    dispatch(
+      fetchProducts({
+        category: selectedCategory !== 'all' ? selectedCategory : undefined,
+        search: searchTerm || undefined,
+        sort: sortField,
+        order: sortOrder,
+      })
+    );
     setShowEditProduct(false);
     setEditProductId(null);
   };
 
   // Xử lý sản phẩm bị ẩn
   const handleProductHidden = () => {
-    // Cập nhật lại danh sách sản phẩm sau khi ẩn
-    dispatch(fetchProducts({
-      category: selectedCategory !== 'all' ? selectedCategory : undefined,
-      search: searchTerm || undefined,
-      sort: sortField,
-      order: sortOrder
-    }));
+    dispatch(
+      fetchProducts({
+        category: selectedCategory !== 'all' ? selectedCategory : undefined,
+        search: searchTerm || undefined,
+        sort: sortField,
+        order: sortOrder,
+      })
+    );
   };
 
   // Xử lý ẩn sản phẩm
@@ -184,15 +189,14 @@ const AdminProductsPage = () => {
       try {
         setIsProcessing(true);
         await ProductService.hideProduct(id);
-
-        // Cập nhật lại danh sách sản phẩm sau khi ẩn
-        dispatch(fetchProducts({
-          category: selectedCategory !== 'all' ? selectedCategory : undefined,
-          search: searchTerm || undefined,
-          sort: sortField,
-          order: sortOrder
-        }));
-
+        dispatch(
+          fetchProducts({
+            category: selectedCategory !== 'all' ? selectedCategory : undefined,
+            search: searchTerm || undefined,
+            sort: sortField,
+            order: sortOrder,
+          })
+        );
         setConfirmHide(null);
       } catch (error) {
         console.error('Failed to hide product:', error);
@@ -201,7 +205,6 @@ const AdminProductsPage = () => {
       }
     } else {
       setConfirmHide(id);
-      // Tự động đóng hộp thoại xác nhận sau 3 giây
       setTimeout(() => {
         setConfirmHide(null);
       }, 3000);
@@ -215,15 +218,14 @@ const AdminProductsPage = () => {
       try {
         setIsDeleting(true);
         await ProductService.deleteProduct(id);
-
-        // Cập nhật lại danh sách sản phẩm sau khi xóa
-        dispatch(fetchProducts({
-          category: selectedCategory !== 'all' ? selectedCategory : undefined,
-          search: searchTerm || undefined,
-          sort: sortField,
-          order: sortOrder
-        }));
-
+        dispatch(
+          fetchProducts({
+            category: selectedCategory !== 'all' ? selectedCategory : undefined,
+            search: searchTerm || undefined,
+            sort: sortField,
+            order: sortOrder,
+          })
+        );
         setConfirmDelete(null);
       } catch (error) {
         console.error('Failed to delete product:', error);
@@ -232,7 +234,6 @@ const AdminProductsPage = () => {
       }
     } else {
       setConfirmDelete(id);
-      // Tự động đóng hộp thoại xác nhận sau 3 giây
       setTimeout(() => {
         setConfirmDelete(null);
       }, 3000);
@@ -244,7 +245,7 @@ const AdminProductsPage = () => {
     return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
       currency: 'VND',
-      minimumFractionDigits: 0
+      minimumFractionDigits: 0,
     }).format(price);
   };
 
@@ -327,8 +328,9 @@ const AdminProductsPage = () => {
             {(searchTerm || selectedCategory !== 'all' || sortField !== 'createdAt' || sortOrder !== 'desc') && (
               <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
                 {(searchTerm ? 1 : 0) +
-                 (selectedCategory !== 'all' ? 1 : 0) +
-                 ((sortField !== 'createdAt' || sortOrder !== 'desc') ? 1 : 0)} bộ lọc
+                  (selectedCategory !== 'all' ? 1 : 0) +
+                  (sortField !== 'createdAt' || sortOrder !== 'desc' ? 1 : 0)}{' '}
+                bộ lọc
               </span>
             )}
           </div>
@@ -411,22 +413,16 @@ const AdminProductsPage = () => {
                   {searchTerm && (
                     <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs flex items-center">
                       Tìm: {searchTerm.length > 10 ? searchTerm.substring(0, 10) + '...' : searchTerm}
-                      <button
-                        onClick={() => setSearchTerm('')}
-                        className="ml-1 text-blue-800"
-                      >
-                        &times;
+                      <button onClick={() => setSearchTerm('')} className="ml-1 text-blue-800">
+                        ×
                       </button>
                     </span>
                   )}
                   {selectedCategory !== 'all' && (
                     <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs flex items-center">
-                      {APP_CONFIG.PRODUCT_CATEGORIES.find(c => c.value === selectedCategory)?.label}
-                      <button
-                        onClick={() => setSelectedCategory('all')}
-                        className="ml-1 text-blue-800"
-                      >
-                        &times;
+                      {APP_CONFIG.PRODUCT_CATEGORIES.find((c) => c.value === selectedCategory)?.label}
+                      <button onClick={() => setSelectedCategory('all')} className="ml-1 text-blue-800">
+                        ×
                       </button>
                     </span>
                   )}
@@ -484,9 +480,7 @@ const AdminProductsPage = () => {
                 />
               </svg>
               <h3 className="mt-2 text-sm font-medium text-gray-900">Không có sản phẩm nào</h3>
-              <p className="mt-1 text-xs text-gray-500">
-                Bắt đầu bằng cách thêm sản phẩm mới.
-              </p>
+              <p className="mt-1 text-xs text-gray-500">Bắt đầu bằng cách thêm sản phẩm mới.</p>
               <div className="mt-4">
                 <button
                   type="button"
@@ -527,11 +521,18 @@ const AdminProductsPage = () => {
                       <h3 className="text-sm font-medium text-gray-900 truncate">{product.name}</h3>
                       <div className="mt-1 flex flex-wrap gap-1">
                         <span className="px-1.5 py-0.5 text-xs rounded-full bg-blue-100 text-blue-800">
-                          {APP_CONFIG.PRODUCT_CATEGORIES.find(c => c.value === product.category)?.label || product.category}
+                          {APP_CONFIG.PRODUCT_CATEGORIES.find((c) => c.value === product.category)?.label ||
+                            product.category}
                         </span>
                         <span className="px-1.5 py-0.5 text-xs rounded-full bg-gray-100 text-gray-800">
                           {formatPrice(product.price)}
                         </span>
+                        {product.gift?.enabled && (
+                          <span className="px-1.5 py-0.5 text-xs rounded-full bg-green-100 text-green-800 flex items-center">
+                            <FaGift className="mr-1 h-3 w-3" />
+                            {product.gift.description}
+                          </span>
+                        )}
                       </div>
                       <div className="mt-1 flex items-center">
                         <span className="text-xs text-gray-500">
@@ -546,6 +547,14 @@ const AdminProductsPage = () => {
                           <span className="text-xs text-yellow-600 font-medium">{product.stock} - Sắp hết</span>
                         ) : (
                           <span className="text-xs text-green-600 font-medium">{product.stock} sp</span>
+                        )}
+                        {product.gift?.enabled && (
+                          <>
+                            <span className="mx-1 text-gray-300">•</span>
+                            <span className="text-xs text-green-600 font-medium">
+                              Quà: {product.gift.stock} sp
+                            </span>
+                          </>
                         )}
                         {product.featured && (
                           <>
@@ -624,9 +633,7 @@ const AdminProductsPage = () => {
                     onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                     disabled={currentPage === 1}
                     className={`px-3 py-1 rounded ${
-                      currentPage === 1
-                        ? 'bg-gray-100 text-gray-400'
-                        : 'bg-blue-100 text-blue-700'
+                      currentPage === 1 ? 'bg-gray-100 text-gray-400' : 'bg-blue-100 text-blue-700'
                     }`}
                   >
                     Trước
@@ -640,9 +647,7 @@ const AdminProductsPage = () => {
                     onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                     disabled={currentPage === totalPages}
                     className={`px-3 py-1 rounded ${
-                      currentPage === totalPages
-                        ? 'bg-gray-100 text-gray-400'
-                        : 'bg-blue-100 text-blue-700'
+                      currentPage === totalPages ? 'bg-gray-100 text-gray-400' : 'bg-blue-100 text-blue-700'
                     }`}
                   >
                     Sau
@@ -671,7 +676,6 @@ const AdminProductsPage = () => {
           onProductUpdated={handleProductUpdated}
         />
       )}
-
     </div>
   );
 };
