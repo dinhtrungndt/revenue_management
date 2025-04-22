@@ -12,14 +12,6 @@ const RevenueReport = () => {
   const [interval, setInterval] = useState('daily');
 
   useEffect(() => {
-    if (reports.revenue) {
-      console.log('Revenue report:', reports.revenue);
-      console.log('Products stats:', reports.revenue.productStats);
-      console.log('Time series products:', reports.revenue.timeSeriesProducts);
-    }
-  }, [reports.revenue]);
-
-  useEffect(() => {
     dispatch(fetchRevenueReport({ startDate, endDate, interval }));
   }, [dispatch, startDate, endDate, interval]);
 

@@ -57,8 +57,13 @@ const SpaServiceForm = ({ onClose, onOrderSuccess }) => {
       onOrderSuccess();
 
       setTimeout(() => {
-        onClose();
-        navigate('/order-history');
+        setNote('');
+        setPrice('');
+        setPaymentMethod('cash');
+        setAppointmentTime('');
+        setIsGiftOrder(false); // Đặt lại trạng thái quà tặng
+        setSuccess(false);
+        setError(null);
       }, 2000);
     } catch (err) {
       console.error('Error creating spa order:', err);

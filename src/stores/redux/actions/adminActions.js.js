@@ -1,4 +1,4 @@
-import { apiClient } from '../../../services/authService';
+import { ProductService, OrderService, InventoryService, ReportService } from '../../../services/apiService';
 import {
     FETCH_PRODUCTS,
     FETCH_PRODUCTS_ERROR,
@@ -54,10 +54,10 @@ export const fetchProducts = (params = {}) => {
                 delete apiParams.sortOption;
             }
 
-            const response = await apiClient.get('/api/products', { params: apiParams });
+            const data = await ProductService.getAllProducts(apiParams);
             dispatch({
                 type: FETCH_PRODUCTS,
-                payload: response.data,
+                payload: data,
                 meta: { sortOption } // Truyền thông tin sắp xếp vào action
             });
         } catch (error) {
@@ -73,10 +73,10 @@ export const fetchProducts = (params = {}) => {
 export const fetchProductById = (id) => {
     return async (dispatch) => {
         try {
-            const response = await apiClient.get(`/api/products/${id}`);
+            const data = await ProductService.getProductById(id);
             dispatch({
                 type: FETCH_PRODUCT_BY_ID,
-                payload: response.data,
+                payload: data,
             });
         } catch (error) {
             console.error(`Error fetching product ${id}:`, error);
@@ -91,10 +91,10 @@ export const fetchProductById = (id) => {
 export const createProduct = (productData) => {
     return async (dispatch) => {
         try {
-            const response = await apiClient.post('/api/products', productData);
+            const data = await ProductService.createProduct(productData);
             dispatch({
                 type: CREATE_PRODUCT,
-                payload: response.data,
+                payload: data,
             });
         } catch (error) {
             console.error('Error creating product:', error);
@@ -109,10 +109,10 @@ export const createProduct = (productData) => {
 export const updateProduct = (id, productData) => {
     return async (dispatch) => {
         try {
-            const response = await apiClient.put(`/api/products/${id}`, productData);
+            const data = await ProductService.updateProduct(id, productData);
             dispatch({
                 type: UPDATE_PRODUCT,
-                payload: response.data,
+                payload: data,
             });
         } catch (error) {
             console.error(`Error updating product ${id}:`, error);
@@ -127,7 +127,7 @@ export const updateProduct = (id, productData) => {
 export const deleteProduct = (id) => {
     return async (dispatch) => {
         try {
-            await apiClient.delete(`/api/products/${id}`);
+            await ProductService.deleteProduct(id);
             dispatch({
                 type: DELETE_PRODUCT,
                 payload: { id },
@@ -146,10 +146,10 @@ export const deleteProduct = (id) => {
 export const createOrder = (orderData) => {
     return async (dispatch) => {
         try {
-            const response = await apiClient.post('/api/orders', orderData);
+            const data = await OrderService.createOrder(orderData);
             dispatch({
                 type: CREATE_ORDER,
-                payload: response.data,
+                payload: data,
             });
         } catch (error) {
             console.error('Error creating order:', error);
@@ -164,10 +164,10 @@ export const createOrder = (orderData) => {
 export const fetchUserOrders = () => {
     return async (dispatch) => {
         try {
-            const response = await apiClient.get('/api/orders/me');
+            const data = await OrderService.getUserOrders();
             dispatch({
                 type: FETCH_USER_ORDERS,
-                payload: response.data,
+                payload: data,
             });
         } catch (error) {
             console.error('Error fetching user orders:', error);
@@ -182,10 +182,10 @@ export const fetchUserOrders = () => {
 export const fetchOrderById = (id) => {
     return async (dispatch) => {
         try {
-            const response = await apiClient.get(`/api/orders/${id}`);
+            const data = await OrderService.getOrderById(id);
             dispatch({
                 type: FETCH_ORDER_BY_ID,
-                payload: response.data,
+                payload: data,
             });
         } catch (error) {
             console.error(`Error fetching order ${id}:`, error);
@@ -200,10 +200,10 @@ export const fetchOrderById = (id) => {
 export const fetchAllOrders = (params = {}) => {
     return async (dispatch) => {
         try {
-            const response = await apiClient.get('/api/orders', { params });
+            const data = await OrderService.getAllOrders(params);
             dispatch({
                 type: FETCH_ALL_ORDERS,
-                payload: response.data,
+                payload: data,
             });
         } catch (error) {
             console.error('Error fetching all orders:', error);
@@ -218,10 +218,10 @@ export const fetchAllOrders = (params = {}) => {
 export const updateOrderStatus = (id, status) => {
     return async (dispatch) => {
         try {
-            const response = await apiClient.put(`/api/orders/${id}/status`, { status });
+            const data = await OrderService.updateOrderStatus(id, status);
             dispatch({
                 type: UPDATE_ORDER_STATUS,
-                payload: response.data,
+                payload: data,
             });
         } catch (error) {
             console.error(`Error updating order ${id} status:`, error);
@@ -237,10 +237,10 @@ export const updateOrderStatus = (id, status) => {
 export const importStock = (importData) => {
     return async (dispatch) => {
         try {
-            const response = await apiClient.post('/api/inventory/import', importData);
+            const data = await InventoryService.importStock(importData);
             dispatch({
                 type: IMPORT_STOCK,
-                payload: response.data,
+                payload: data,
             });
         } catch (error) {
             console.error('Error importing stock:', error);
@@ -255,10 +255,10 @@ export const importStock = (importData) => {
 export const adjustStock = (adjustData) => {
     return async (dispatch) => {
         try {
-            const response = await apiClient.post('/api/inventory/adjust', adjustData);
+            const data = await InventoryService.adjustStock(adjustData);
             dispatch({
                 type: ADJUST_STOCK,
-                payload: response.data,
+                payload: data,
             });
         } catch (error) {
             console.error('Error adjusting stock:', error);
@@ -273,10 +273,10 @@ export const adjustStock = (adjustData) => {
 export const fetchInventoryTransactions = (params = {}) => {
     return async (dispatch) => {
         try {
-            const response = await apiClient.get('/api/inventory/transactions', { params });
+            const data = await InventoryService.getInventoryTransactions(params);
             dispatch({
                 type: FETCH_INVENTORY_TRANSACTIONS,
-                payload: response.data,
+                payload: data,
             });
         } catch (error) {
             console.error('Error fetching inventory transactions:', error);
@@ -292,10 +292,10 @@ export const fetchInventoryTransactions = (params = {}) => {
 export const fetchReportDashboard = () => {
     return async (dispatch) => {
         try {
-            const response = await apiClient.get('/api/reports/dashboard');
+            const data = await ReportService.getDashboardReport();
             dispatch({
                 type: FETCH_REPORTS_DASHBOARD,
-                payload: response.data,
+                payload: data,
             });
         } catch (error) {
             console.error('Error fetching dashboard report:', error);
@@ -310,10 +310,10 @@ export const fetchReportDashboard = () => {
 export const fetchInventoryReport = (params = {}) => {
     return async (dispatch) => {
         try {
-            const response = await apiClient.get('/api/reports/inventory', { params });
+            const data = await ReportService.getInventoryReport(params);
             dispatch({
                 type: FETCH_INVENTORY_REPORT,
-                payload: response.data,
+                payload: data,
             });
         } catch (error) {
             console.error('Error fetching inventory report:', error);
@@ -328,10 +328,10 @@ export const fetchInventoryReport = (params = {}) => {
 export const fetchExportReport = (params = {}) => {
     return async (dispatch) => {
         try {
-            const response = await apiClient.get('/api/reports/export', { params });
+            const data = await ReportService.getExportReport(params);
             dispatch({
                 type: FETCH_EXPORT_REPORT,
-                payload: response.data,
+                payload: data,
             });
         } catch (error) {
             console.error('Error fetching export report:', error);
@@ -346,10 +346,10 @@ export const fetchExportReport = (params = {}) => {
 export const fetchRevenueReport = (params = {}) => {
     return async (dispatch) => {
         try {
-            const response = await apiClient.get('/api/reports/revenue', { params });
+            const data = await ReportService.getRevenueReport(params);
             dispatch({
                 type: FETCH_REVENUE_REPORT,
-                payload: response.data,
+                payload: data,
             });
         } catch (error) {
             console.error('Error fetching revenue report:', error);
