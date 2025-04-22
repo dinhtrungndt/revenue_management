@@ -11,13 +11,13 @@ const EditProductDialog = ({ productId, onClose, onProductUpdated }) => {
   const [formData, setFormData] = useState({
     name: '',
     category: '',
-    importPrice: '', // Thêm trường giá nhập
+    importPrice: '',
     price: '',
     description: '',
     weight: '',
     stock: '',
     featured: false,
-    canBeGift: true, // Thay thế trường giftEnabled bằng canBeGift
+    canBeGift: true,
   });
   const [originalImage, setOriginalImage] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
