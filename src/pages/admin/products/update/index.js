@@ -1,13 +1,20 @@
 import React, { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import {
   FaTimes, FaSave, FaUpload, FaSpinner, FaTag, FaLayerGroup,
   FaDollarSign, FaPencilAlt, FaWeightHanging, FaBoxOpen,
   FaStar, FaCamera, FaTrash
 } from 'react-icons/fa';
 import { APP_CONFIG } from '../../../../config';
-import { ProductService } from '../../../../services/apiService';
+import { fetchProductById, updateProduct } from '../../../../stores/redux/actions/adminActions.js';
 
 const EditProductDialog = ({ productId, onClose, onProductUpdated }) => {
+  const dispatch = useDispatch();
+
+  const { productDetails, productDetailsLoading, productDetailsError } = useSelector(
+    (state) => state.adminReducer
+  );
+
   const [formData, setFormData] = useState({
     name: '',
     category: '',
@@ -23,47 +30,44 @@ const EditProductDialog = ({ productId, onClose, onProductUpdated }) => {
   const [previewImage, setPreviewImage] = useState(null);
   const [newImage, setNewImage] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [fetchLoading, setFetchLoading] = useState(true);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [deleteImageMode, setDeleteImageMode] = useState(false);
 
   useEffect(() => {
-    const fetchProductData = async () => {
-      try {
-        setFetchLoading(true);
-        setError(null);
-        const response = await ProductService.getProductById(productId);
-        const product = response;
-
-        setFormData({
-          name: product.name || '',
-          category: product.category || 'dog',
-          importPrice: product.importPrice || '', // Lấy giá nhập từ API
-          price: product.price || '',
-          description: product.description || '',
-          weight: product.weight || '',
-          stock: product.stock || '',
-          featured: product.featured || false,
-          canBeGift: product.canBeGift !== undefined ? product.canBeGift : true, // Cập nhật từ response
-        });
-
-        if (product.image) {
-          setOriginalImage(product.image);
-          setPreviewImage(product.image);
-        }
-      } catch (err) {
-        console.error('Error fetching product:', err);
-        setError(err.response?.data?.message || 'Không thể tải thông tin sản phẩm');
-      } finally {
-        setFetchLoading(false);
-      }
-    };
-
     if (productId) {
-      fetchProductData();
+      dispatch(fetchProductById(productId));
     }
-  }, [productId]);
+  }, [dispatch, productId]);
+
+  // Cập nhật form khi dữ liệu sản phẩm được load từ Redux
+  useEffect(() => {
+    if (productDetails) {
+      setFormData({
+        name: productDetails.name || '',
+        category: productDetails.category || 'dog',
+        importPrice: productDetails.importPrice || '',
+        price: productDetails.price || '',
+        description: productDetails.description || '',
+        weight: productDetails.weight || '',
+        stock: productDetails.stock || '',
+        featured: productDetails.featured || false,
+        canBeGift: productDetails.canBeGift !== undefined ? productDetails.canBeGift : true,
+      });
+
+      if (productDetails.image) {
+        setOriginalImage(productDetails.image);
+        setPreviewImage(productDetails.image);
+      }
+    }
+  }, [productDetails]);
+
+  // Cập nhật error từ Redux store
+  useEffect(() => {
+    if (productDetailsError) {
+      setError(productDetailsError.message || 'Không thể tải thông tin sản phẩm');
+    }
+  }, [productDetailsError]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -114,7 +118,7 @@ const EditProductDialog = ({ productId, onClose, onProductUpdated }) => {
       const data = new FormData();
       data.append('name', formData.name);
       data.append('category', formData.category);
-      data.append('importPrice', parseFloat(formData.importPrice)); // Thêm importPrice
+      data.append('importPrice', parseFloat(formData.importPrice));
       data.append('price', parseFloat(formData.price));
       data.append('description', formData.description);
       if (formData.category !== 'spa') {
@@ -122,14 +126,14 @@ const EditProductDialog = ({ productId, onClose, onProductUpdated }) => {
         data.append('stock', parseInt(formData.stock));
       }
       data.append('featured', formData.featured);
-      data.append('canBeGift', formData.canBeGift); // Thêm trường canBeGift
+      data.append('canBeGift', formData.canBeGift);
       if (newImage) {
         data.append('image', newImage);
       } else if (deleteImageMode) {
         data.append('deleteImage', true);
       }
 
-      await ProductService.updateProduct(productId, data);
+      await dispatch(updateProduct(productId, data));
       setSuccess(true);
       setTimeout(() => {
         if (onProductUpdated) onProductUpdated();
@@ -137,7 +141,8 @@ const EditProductDialog = ({ productId, onClose, onProductUpdated }) => {
       }, 500);
     } catch (err) {
       console.error('Error updating product:', err);
-      setError(err.response?.data?.message || 'Đã xảy ra lỗi khi cập nhật sản phẩm');
+      setError(err.message || 'Đã xảy ra lỗi khi cập nhật sản phẩm');
+    } finally {
       setLoading(false);
     }
   };
@@ -169,7 +174,7 @@ const EditProductDialog = ({ productId, onClose, onProductUpdated }) => {
     e.stopPropagation();
   };
 
-  if (fetchLoading) {
+  if (productDetailsLoading) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50" onClick={onClose}>
         <div className="bg-white rounded-lg shadow-xl p-4 w-full max-w-lg mx-3" onClick={stopPropagation}>

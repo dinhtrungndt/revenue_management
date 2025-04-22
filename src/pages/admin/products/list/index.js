@@ -21,10 +21,13 @@ import {
 } from 'react-icons/fa';
 import { APP_CONFIG } from '../../../../config/index.js';
 import { useAuth } from '../../../../contexts/AuthContext.js';
-import { ProductService } from '../../../../services/apiService';
 import ProductDetailDialogAdmin from '../detail/index.js';
 import EditProductDialog from '../update/index.js';
-import { fetchProducts } from '../../../../stores/redux/actions/adminActions.js';
+import {
+  fetchProducts,
+  deleteProduct,
+  hideProduct
+} from '../../../../stores/redux/actions/adminActions.js';
 
 const AdminProductsPage = () => {
   const navigate = useNavigate();
@@ -157,28 +160,28 @@ const AdminProductsPage = () => {
 
   // Xử lý hoàn thành chỉnh sửa sản phẩm
   const handleProductUpdated = () => {
-    dispatch(
-      fetchProducts({
-        category: selectedCategory !== 'all' ? selectedCategory : undefined,
-        search: searchTerm || undefined,
-        sort: sortField,
-        order: sortOrder,
-      })
-    );
+    const params = {
+      category: selectedCategory !== 'all' ? selectedCategory : undefined,
+      search: searchTerm || undefined,
+      sort: sortField,
+      order: sortOrder,
+    };
+
+    dispatch(fetchProducts(params));
     setShowEditProduct(false);
     setEditProductId(null);
   };
 
   // Xử lý sản phẩm bị ẩn
   const handleProductHidden = () => {
-    dispatch(
-      fetchProducts({
-        category: selectedCategory !== 'all' ? selectedCategory : undefined,
-        search: searchTerm || undefined,
-        sort: sortField,
-        order: sortOrder,
-      })
-    );
+    const params = {
+      category: selectedCategory !== 'all' ? selectedCategory : undefined,
+      search: searchTerm || undefined,
+      sort: sortField,
+      order: sortOrder,
+    };
+
+    dispatch(fetchProducts(params));
   };
 
   // Xử lý ẩn sản phẩm
@@ -187,15 +190,16 @@ const AdminProductsPage = () => {
     if (confirmHide === id) {
       try {
         setIsProcessing(true);
-        await ProductService.hideProduct(id);
-        dispatch(
-          fetchProducts({
-            category: selectedCategory !== 'all' ? selectedCategory : undefined,
-            search: searchTerm || undefined,
-            sort: sortField,
-            order: sortOrder,
-          })
-        );
+        // Sử dụng action Redux thay vì gọi service trực tiếp
+        await dispatch(hideProduct(id));
+        // Refresh danh sách sản phẩm
+        const params = {
+          category: selectedCategory !== 'all' ? selectedCategory : undefined,
+          search: searchTerm || undefined,
+          sort: sortField,
+          order: sortOrder,
+        };
+        dispatch(fetchProducts(params));
         setConfirmHide(null);
       } catch (error) {
         console.error('Failed to hide product:', error);
@@ -216,15 +220,16 @@ const AdminProductsPage = () => {
     if (confirmDelete === id) {
       try {
         setIsDeleting(true);
-        await ProductService.deleteProduct(id);
-        dispatch(
-          fetchProducts({
-            category: selectedCategory !== 'all' ? selectedCategory : undefined,
-            search: searchTerm || undefined,
-            sort: sortField,
-            order: sortOrder,
-          })
-        );
+        // Sử dụng action Redux thay vì gọi service trực tiếp
+        await dispatch(deleteProduct(id));
+        // Refresh danh sách sản phẩm
+        const params = {
+          category: selectedCategory !== 'all' ? selectedCategory : undefined,
+          search: searchTerm || undefined,
+          sort: sortField,
+          order: sortOrder,
+        };
+        dispatch(fetchProducts(params));
         setConfirmDelete(null);
       } catch (error) {
         console.error('Failed to delete product:', error);
@@ -343,11 +348,10 @@ const AdminProductsPage = () => {
                 <div className="flex flex-wrap gap-1">
                   <button
                     onClick={() => handleCategoryChange('all')}
-                    className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      selectedCategory === 'all'
+                    className={`px-2 py-1 rounded-full text-xs font-medium ${selectedCategory === 'all'
                         ? 'bg-blue-600 text-white'
                         : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                    }`}
+                      }`}
                   >
                     Tất cả
                   </button>
@@ -355,11 +359,10 @@ const AdminProductsPage = () => {
                     <button
                       key={category.value}
                       onClick={() => handleCategoryChange(category.value)}
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        selectedCategory === category.value
+                      className={`px-2 py-1 rounded-full text-xs font-medium ${selectedCategory === category.value
                           ? 'bg-blue-600 text-white'
                           : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                      }`}
+                        }`}
                     >
                       {category.label}
                     </button>
@@ -373,33 +376,29 @@ const AdminProductsPage = () => {
                 <div className="grid grid-cols-2 gap-1">
                   <button
                     onClick={() => handleSort('name')}
-                    className={`px-2 py-1 text-xs rounded flex items-center justify-center ${
-                      sortField === 'name' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100'
-                    }`}
+                    className={`px-2 py-1 text-xs rounded flex items-center justify-center ${sortField === 'name' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100'
+                      }`}
                   >
                     Tên {sortField === 'name' && (sortOrder === 'asc' ? '↑' : '↓')}
                   </button>
                   <button
                     onClick={() => handleSort('price')}
-                    className={`px-2 py-1 text-xs rounded flex items-center justify-center ${
-                      sortField === 'price' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100'
-                    }`}
+                    className={`px-2 py-1 text-xs rounded flex items-center justify-center ${sortField === 'price' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100'
+                      }`}
                   >
                     Giá {sortField === 'price' && (sortOrder === 'asc' ? '↑' : '↓')}
                   </button>
                   <button
                     onClick={() => handleSort('stock')}
-                    className={`px-2 py-1 text-xs rounded flex items-center justify-center ${
-                      sortField === 'stock' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100'
-                    }`}
+                    className={`px-2 py-1 text-xs rounded flex items-center justify-center ${sortField === 'stock' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100'
+                      }`}
                   >
                     Tồn kho {sortField === 'stock' && (sortOrder === 'asc' ? '↑' : '↓')}
                   </button>
                   <button
                     onClick={() => handleSort('createdAt')}
-                    className={`px-2 py-1 text-xs rounded flex items-center justify-center ${
-                      sortField === 'createdAt' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100'
-                    }`}
+                    className={`px-2 py-1 text-xs rounded flex items-center justify-center ${sortField === 'createdAt' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100'
+                      }`}
                   >
                     Ngày tạo {sortField === 'createdAt' && (sortOrder === 'asc' ? '↑' : '↓')}
                   </button>
@@ -586,9 +585,8 @@ const AdminProductsPage = () => {
                           </button>
                           <button
                             onClick={(e) => handleHideProduct(product._id, e)}
-                            className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-100 flex items-center ${
-                              confirmHide === product._id ? 'text-red-700 font-medium bg-red-50' : 'text-gray-700'
-                            }`}
+                            className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-100 flex items-center ${confirmHide === product._id ? 'text-red-700 font-medium bg-red-50' : 'text-gray-700'
+                              }`}
                           >
                             {isProcessing && confirmHide === product._id ? (
                               <FaSpinner className="animate-spin mr-2 text-red-500" />
@@ -599,9 +597,8 @@ const AdminProductsPage = () => {
                           </button>
                           <button
                             onClick={(e) => handleDelete(product._id, e)}
-                            className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-100 flex items-center ${
-                              confirmDelete === product._id ? 'text-red-700 font-medium bg-red-50' : 'text-gray-700'
-                            }`}
+                            className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-100 flex items-center ${confirmDelete === product._id ? 'text-red-700 font-medium bg-red-50' : 'text-gray-700'
+                              }`}
                           >
                             {isDeleting && confirmDelete === product._id ? (
                               <FaSpinner className="animate-spin mr-2 text-red-500" />
@@ -623,9 +620,8 @@ const AdminProductsPage = () => {
                   <button
                     onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                     disabled={currentPage === 1}
-                    className={`px-3 py-1 rounded ${
-                      currentPage === 1 ? 'bg-gray-100 text-gray-400' : 'bg-blue-100 text-blue-700'
-                    }`}
+                    className={`px-3 py-1 rounded ${currentPage === 1 ? 'bg-gray-100 text-gray-400' : 'bg-blue-100 text-blue-700'
+                      }`}
                   >
                     Trước
                   </button>
@@ -637,9 +633,8 @@ const AdminProductsPage = () => {
                   <button
                     onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                     disabled={currentPage === totalPages}
-                    className={`px-3 py-1 rounded ${
-                      currentPage === totalPages ? 'bg-gray-100 text-gray-400' : 'bg-blue-100 text-blue-700'
-                    }`}
+                    className={`px-3 py-1 rounded ${currentPage === totalPages ? 'bg-gray-100 text-gray-400' : 'bg-blue-100 text-blue-700'
+                      }`}
                   >
                     Sau
                   </button>
