@@ -49,6 +49,12 @@ import {
     CREATE_PRODUCT_SUCCESS,
     HIDE_PRODUCT,
     HIDE_PRODUCT_ERROR,
+    FETCH_GIFTABLE_PRODUCTS,
+    FETCH_GIFTABLE_PRODUCTS_SUCCESS,
+    FETCH_GIFTABLE_PRODUCTS_ERROR,
+    CREATE_SPA_ORDER,
+    CREATE_SPA_ORDER_SUCCESS,
+    CREATE_SPA_ORDER_ERROR,
 } from '../actions/types';
 
 const initialState = {
@@ -120,6 +126,44 @@ const adminReducer = (state = initialState, action) => {
                 productDetails: action.payload,
                 productDetailsLoading: action.meta?.loading || false,
                 productDetailsError: null,
+            };
+        case FETCH_GIFTABLE_PRODUCTS:
+            return {
+                ...state,
+                giftableProductsLoading: true,
+                giftableProductsError: null,
+            };
+        case FETCH_GIFTABLE_PRODUCTS_SUCCESS:
+            return {
+                ...state,
+                giftableProducts: action.payload,
+                giftableProductsLoading: false,
+                giftableProductsError: null,
+            };
+        case FETCH_GIFTABLE_PRODUCTS_ERROR:
+            return {
+                ...state,
+                giftableProductsLoading: false,
+                giftableProductsError: action.payload,
+            };
+        case CREATE_SPA_ORDER:
+            return {
+                ...state,
+                loading: true,
+                error: null,
+            };
+        case CREATE_SPA_ORDER_SUCCESS:
+            return {
+                ...state,
+                orders: [...state.orders, action.payload],
+                loading: false,
+                error: null,
+            };
+        case CREATE_SPA_ORDER_ERROR:
+            return {
+                ...state,
+                loading: false,
+                error: action.payload,
             };
         case FETCH_PRODUCTS_HIDDEN:
             return {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { FaTimes, FaMoneyBill, FaCreditCard, FaExclamationTriangle, FaGift, FaSpinner } from 'react-icons/fa';
-import { ProductService } from '../../../services/apiService';
+import { fetchGiftableProducts } from '../../../stores/redux/actions/adminActions.js';
 
 const PayMent = ({
   product,
@@ -11,12 +12,16 @@ const PayMent = ({
   setShowPaymentModal,
   ordering
 }) => {
+  const dispatch = useDispatch();
+
+  // Lấy danh sách giftable products từ Redux store
+  const { giftableProducts = [], giftableProductsLoading = false, giftableProductsError = null } = useSelector((state) => {
+    return state.adminReducer || {};
+  });
+
   const [showGiftOption, setShowGiftOption] = useState(false);
-  const [giftProducts, setGiftProducts] = useState([]);
   const [selectedGift, setSelectedGift] = useState(null);
-  const [isGiftOrder, setIsGiftOrder] = useState(false); // Thêm state cho quà tặng
-  const [loadingGifts, setLoadingGifts] = useState(false);
-  const [giftError, setGiftError] = useState(null);
+  const [isGiftOrder, setIsGiftOrder] = useState(false);
 
   const formatPrice = (price) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -26,25 +31,12 @@ const PayMent = ({
     }).format(price);
   };
 
+  // Khi component hiển thị gift option, fetch danh sách sản phẩm quà tặng từ Redux
   useEffect(() => {
-    const fetchGiftProducts = async () => {
-      try {
-        setLoadingGifts(true);
-        setGiftError(null);
-        const response = await ProductService.getGiftableProducts();
-        setGiftProducts(response);
-      } catch (error) {
-        console.error('Error fetching gift products:', error);
-        setGiftError('Không thể tải danh sách quà tặng. Vui lòng thử lại sau.');
-      } finally {
-        setLoadingGifts(false);
-      }
-    };
-
     if (showGiftOption) {
-      fetchGiftProducts();
+      dispatch(fetchGiftableProducts());
     }
-  }, [showGiftOption]);
+  }, [showGiftOption, dispatch]);
 
   const handleSelectGift = (giftProduct) => {
     setSelectedGift(giftProduct);
@@ -53,7 +45,7 @@ const PayMent = ({
   const handleConfirmCheckout = () => {
     handleCheckout({
       productId: selectedGift ? selectedGift._id : null,
-      isGiftOrder // Gửi isGiftOrder lên backend
+      isGiftOrder
     });
   };
 
@@ -135,17 +127,6 @@ const PayMent = ({
               </div>
             </div>
 
-            {/* <div className="mt-5">
-              <button
-                type="button"
-                className="inline-flex justify-center w-full rounded-md border border-transparent shadow-sm px-4 py-3 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                onClick={() => setShowGiftOption(true)}
-              >
-                <FaGift className="mr-2 h-5 w-5" />
-                Bạn có muốn chọn quà tặng kèm theo không?
-              </button>
-            </div> */}
-
             <div className="mt-4">
               <button
                 type="button"
@@ -175,18 +156,18 @@ const PayMent = ({
                 Bạn có thể chọn một sản phẩm từ danh sách dưới đây để tặng kèm với đơn hàng của bạn.
               </p>
 
-              {loadingGifts ? (
+              {giftableProductsLoading ? (
                 <div className="flex justify-center items-center h-40">
                   <FaSpinner className="animate-spin h-8 w-8 text-blue-500" />
                 </div>
-              ) : giftError ? (
+              ) : giftableProductsError ? (
                 <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
                   <div className="flex items-center">
                     <FaExclamationTriangle className="h-5 w-5 text-red-500 mr-2" />
-                    <p className="text-sm text-red-700">{giftError}</p>
+                    <p className="text-sm text-red-700">{giftableProductsError}</p>
                   </div>
                 </div>
-              ) : giftProducts.length === 0 ? (
+              ) : giftableProducts.length === 0 ? (
                 <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-4">
                   <div className="flex items-center">
                     <FaExclamationTriangle className="h-5 w-5 text-yellow-500 mr-2" />
@@ -208,7 +189,7 @@ const PayMent = ({
                       <p className="text-sm font-medium text-gray-900 text-center">Không tặng quà</p>
                     </div>
 
-                    {giftProducts.map((giftProduct) => (
+                    {giftableProducts.map((giftProduct) => (
                       <div
                         key={giftProduct._id}
                         className={`border rounded-lg p-2 cursor-pointer ${

@@ -3,12 +3,16 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { FaSearch, FaFilter, FaSortAmountDown, FaSortAmountUp, FaPaw, FaStar, FaExclamationCircle } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
 import { APP_CONFIG } from '../../config';
-import { fetchProducts } from '../../stores/redux/actions/adminActions.js';
-import { OrderService } from '../../services/apiService';
+import {
+  fetchProducts,
+  createOrder,
+  createSpaOrder
+} from '../../stores/redux/actions/adminActions.js';
 import { useAuth } from '../../contexts/AuthContext';
 import ProductDetailPage from './detail/index.js';
 import PayMent from './payment/index.js';
 import SpaServiceForm from './SpaServiceForm/index.js';
+import { toast } from 'react-toastify';
 
 const ProductsPage = () => {
   const location = useLocation();
@@ -41,17 +45,10 @@ const ProductsPage = () => {
   const [orderError, setOrderError] = useState(null);
   const [showSpaForm, setShowSpaForm] = useState(false);
 
+  // Lấy dữ liệu từ Redux store
   const { products = [], loading = false, error = null } = useSelector((state) => {
     return state.adminReducer || {};
   });
-
-  const fetchProductsData = async (params) => {
-    try {
-      await dispatch(fetchProducts(params));
-    } catch (error) {
-      console.error('Error fetching products:', error);
-    }
-  };
 
   useEffect(() => {
     const apiParams = {};
@@ -83,7 +80,7 @@ const ProductsPage = () => {
       { replace: true }
     );
 
-    fetchProductsData(apiParams);
+    dispatch(fetchProducts(apiParams));
   }, [selectedCategory, searchTerm, sortOption, dispatch, navigate]);
 
   const handleSearch = (e) => {
@@ -198,17 +195,21 @@ const ProductsPage = () => {
         orderData.gift = { productId: giftData.productId };
       }
 
-      await OrderService.createOrder(orderData);
+      // Sử dụng Redux thay vì gọi service trực tiếp
+      await dispatch(createOrder(orderData));
+
       setOrderSuccess(true);
       setShowPaymentModal(false);
       setQuantity(1);
       closeProductModal();
 
-      fetchProductsData({
+      // Refresh danh sách sản phẩm để cập nhật số lượng tồn kho
+      const apiParams = {
         category: selectedCategory !== 'all' ? selectedCategory : undefined,
         search: searchTerm || undefined,
         sortOption,
-      });
+      };
+      dispatch(fetchProducts(apiParams));
     } catch (err) {
       console.error('Error creating order:', err);
       let errorMessage = err.response?.data?.message || err.message || 'Đã xảy ra lỗi khi đặt hàng. Vui lòng thử lại sau.';
@@ -239,28 +240,13 @@ const ProductsPage = () => {
   return (
     <div className="max-w-7xl mx-auto px-3 py-4">
       {orderSuccess && (
-        <div className="fixed inset-x-0 top-4 mx-auto w-11/12 z-50">
-          <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded shadow-md">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <svg
-                  className="h-5 w-5 text-green-400"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm text-green-700">
-                  Thêm hàng thành công! Đơn hàng của bạn đã được tạo thành công.
-                </p>
-              </div>
+        <div className="bg-green-50 border-l-4 border-green-500 p-3 mb-4 rounded-r text-sm">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <FaPaw className="h-5 w-5 text-green-400" />
+            </div>
+            <div className="ml-2">
+              <p className="text-green-700">Đặt hàng thành công!</p>
             </div>
           </div>
         </div>

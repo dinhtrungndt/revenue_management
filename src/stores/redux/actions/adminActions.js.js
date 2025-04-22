@@ -50,6 +50,12 @@ import {
     CREATE_PRODUCT_SUCCESS,
     HIDE_PRODUCT,
     HIDE_PRODUCT_ERROR,
+    FETCH_GIFTABLE_PRODUCTS_SUCCESS,
+    FETCH_GIFTABLE_PRODUCTS,
+    FETCH_GIFTABLE_PRODUCTS_ERROR,
+    CREATE_SPA_ORDER,
+    CREATE_SPA_ORDER_SUCCESS,
+    CREATE_SPA_ORDER_ERROR,
 } from './types';
 
 // Action để đặt trạng thái khôi phục
@@ -101,6 +107,48 @@ export const fetchProductById = (productId) => {
                 type: FETCH_PRODUCT_BY_ID_ERROR,
                 payload: error.response?.data || { message: 'Lỗi khi lấy chi tiết sản phẩm' },
             });
+        }
+    };
+};
+
+export const fetchGiftableProducts = () => {
+    return async (dispatch) => {
+        try {
+            dispatch({ type: FETCH_GIFTABLE_PRODUCTS, meta: { loading: true } });
+            const data = await ProductService.getGiftableProducts();
+            dispatch({
+                type: FETCH_GIFTABLE_PRODUCTS_SUCCESS,
+                payload: data,
+            });
+            return data;
+        } catch (error) {
+            console.error('Error fetching giftable products:', error);
+            dispatch({
+                type: FETCH_GIFTABLE_PRODUCTS_ERROR,
+                payload: error.response?.data || { message: 'Lỗi khi lấy danh sách quà tặng' },
+            });
+            throw error;
+        }
+    };
+};
+
+export const createSpaOrder = (spaOrderData) => {
+    return async (dispatch) => {
+        try {
+            dispatch({ type: CREATE_SPA_ORDER, meta: { loading: true } });
+            const data = await OrderService.createSpaOrder(spaOrderData);
+            dispatch({
+                type: CREATE_SPA_ORDER_SUCCESS,
+                payload: data,
+            });
+            return data;
+        } catch (error) {
+            console.error('Error creating spa order:', error);
+            dispatch({
+                type: CREATE_SPA_ORDER_ERROR,
+                payload: error.response?.data || { message: 'Lỗi khi tạo đơn hàng dịch vụ spa' },
+            });
+            throw error;
         }
     };
 };

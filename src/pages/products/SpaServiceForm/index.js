@@ -1,18 +1,20 @@
 import React, { useState } from 'react';
+import { useDispatch } from 'react-redux';
 import { FaTimes, FaSave, FaMoneyBill, FaCreditCard, FaGift } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
-import { OrderService } from '../../../services/apiService';
+import { createSpaOrder } from '../../../stores/redux/actions/adminActions.js';
 
 const SpaServiceForm = ({ onClose, onOrderSuccess }) => {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const [note, setNote] = useState('');
   const [price, setPrice] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [appointmentTime, setAppointmentTime] = useState('');
-  const [isGiftOrder, setIsGiftOrder] = useState(false); // Thêm state cho quà tặng
+  const [isGiftOrder, setIsGiftOrder] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
@@ -48,10 +50,11 @@ const SpaServiceForm = ({ onClose, onOrderSuccess }) => {
         price: parseFloat(price),
         paymentMethod: paymentMethod,
         appointmentTime: appointmentTime || null,
-        isGiftOrder // Thêm isGiftOrder
+        isGiftOrder
       };
 
-      await OrderService.createSpaOrder(orderData);
+      // Sử dụng action Redux thay vì gọi service trực tiếp
+      await dispatch(createSpaOrder(orderData));
 
       setSuccess(true);
       onOrderSuccess();
@@ -61,9 +64,10 @@ const SpaServiceForm = ({ onClose, onOrderSuccess }) => {
         setPrice('');
         setPaymentMethod('cash');
         setAppointmentTime('');
-        setIsGiftOrder(false); // Đặt lại trạng thái quà tặng
+        setIsGiftOrder(false);
         setSuccess(false);
         setError(null);
+        onClose();
       }, 2000);
     } catch (err) {
       console.error('Error creating spa order:', err);
