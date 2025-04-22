@@ -46,6 +46,9 @@ import {
     RESTORE_EXPENSE,
     FETCH_PRODUCTS_HIDDEN,
     RESTORE_PRODUCT,
+    CREATE_PRODUCT_SUCCESS,
+    HIDE_PRODUCT,
+    HIDE_PRODUCT_ERROR,
 } from '../actions/types';
 
 const initialState = {
@@ -54,6 +57,9 @@ const initialState = {
     productsLoading: false,
     productsError: null,
     productSuccess: false,
+    productDetails: null,
+    productDetailsLoading: false,
+    productDetailsError: null,
     hiddenProducts: [],
     hiddenProductsLoading: false,
     hiddenProductsError: null,
@@ -111,9 +117,9 @@ const adminReducer = (state = initialState, action) => {
         case FETCH_PRODUCT_BY_ID:
             return {
                 ...state,
-                product: action.payload,
-                loading: false,
-                error: null,
+                productDetails: action.payload,
+                productDetailsLoading: action.meta?.loading || false,
+                productDetailsError: null,
             };
         case FETCH_PRODUCTS_HIDDEN:
             return {
@@ -121,6 +127,24 @@ const adminReducer = (state = initialState, action) => {
                 hiddenProducts: action.payload,
                 hiddenProductsLoading: false,
                 hiddenProductsError: null,
+            };
+        case HIDE_PRODUCT:
+            return {
+                ...state,
+                products: state.products.filter(p => p._id !== action.payload),
+                productDetailsLoading: false,
+                productDetailsError: null,
+            };
+        case HIDE_PRODUCT_ERROR:
+            return {
+                ...state,
+                productDetailsLoading: false,
+                productDetailsError: action.payload,
+            };
+        case 'RESET_PRODUCT_SUCCESS':
+            return {
+                ...state,
+                productSuccess: false,
             };
         case RESTORE_PRODUCT:
             return {
@@ -142,15 +166,22 @@ const adminReducer = (state = initialState, action) => {
         case FETCH_PRODUCT_BY_ID_ERROR:
             return {
                 ...state,
-                loading: false,
-                error: action.payload,
+                productDetailsLoading: false,
+                productDetailsError: action.payload,
             };
         case CREATE_PRODUCT:
             return {
                 ...state,
+                productsLoading: true,
+                productsError: null,
+                productSuccess: false,
+            };
+        case CREATE_PRODUCT_SUCCESS:
+            return {
+                ...state,
                 products: [...state.products, action.payload],
-                loading: false,
-                error: null,
+                productsLoading: false,
+                productSuccess: true,
             };
         case CREATE_PRODUCT_ERROR:
             return {

@@ -1,15 +1,17 @@
-// components/admin/AddProducts.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaTimes, FaSave, FaUpload, FaSpinner, FaTag, FaLayerGroup, FaDollarSign,
   FaPencilAlt, FaWeightHanging, FaBoxOpen, FaStar, FaCamera } from 'react-icons/fa';
-import { ProductService } from '../../../../services/apiService';
 import { APP_CONFIG } from '../../../../config';
 import { useAuth } from '../../../../contexts/AuthContext';
+import { useSelector, useDispatch } from 'react-redux';
+import { createProduct } from '../../../../stores/redux/actions/adminActions.js';
 
 const AddProducts = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { isAuthenticated, user } = useAuth();
+  const { productsLoading, productsError, productSuccess } = useSelector((state) => state.adminReducer);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -21,12 +23,30 @@ const AddProducts = () => {
     stock: '',
     featured: false,
     image: null,
-    canBeGift: true, // Thêm trường mới để đánh dấu sản phẩm có thể làm quà hay không
+    canBeGift: true,
   });
   const [previewImage, setPreviewImage] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    if (productSuccess) {
+      setTimeout(() => {
+        setFormData({
+          name: '',
+          category: 'dog',
+          importPrice: '',
+          price: '',
+          description: '',
+          weight: '',
+          stock: '',
+          featured: false,
+          image: null,
+          canBeGift: true,
+        });
+        setPreviewImage(null);
+        dispatch({ type: 'RESET_PRODUCT_SUCCESS' });
+      }, 2000);
+    }
+  }, [productSuccess, dispatch]);
 
   if (!isAuthenticated || user?.role !== 'admin') {
     navigate('/login', { state: { from: '/admin/list-products' } });
@@ -51,10 +71,6 @@ const AddProducts = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
-    setSuccess(false);
-
     try {
       const data = new FormData();
       data.append('name', formData.name);
@@ -67,34 +83,15 @@ const AddProducts = () => {
         data.append('stock', parseInt(formData.stock, 10));
       }
       data.append('featured', formData.featured);
-      data.append('canBeGift', formData.canBeGift); // Thêm trường canBeGift
+      data.append('canBeGift', formData.canBeGift);
       if (formData.image) {
         data.append('image', formData.image);
       }
 
-      await ProductService.createProduct(data);
-      setSuccess(true);
-      setTimeout(() => {
-        setSuccess(false);
-        setFormData({
-          name: '',
-          category: 'dog',
-          importPrice: '',
-          price: '',
-          description: '',
-          weight: '',
-          stock: '',
-          featured: false,
-          image: null,
-          canBeGift: true,
-        });
-        setPreviewImage(null);
-      }, 2000);
+      await dispatch(createProduct(data));
+
     } catch (err) {
       console.error('Error creating product:', err);
-      setError(err.response?.data?.message || 'Đã xảy ra lỗi khi thêm sản phẩm');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -123,7 +120,7 @@ const AddProducts = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-gray-100 px-4 py-6">
       <div className="max-w-lg mx-auto">
-        {error && (
+        {productsError && (
           <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-lg shadow-md animate-pulse">
             <div className="flex items-start">
               <svg className="h-5 w-5 text-red-500 mr-3 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
@@ -131,12 +128,12 @@ const AddProducts = () => {
               </svg>
               <div>
                 <h3 className="text-sm font-medium text-red-800">Lỗi!</h3>
-                <p className="text-sm text-red-700 mt-1">{error}</p>
+                <p className="text-sm text-red-700 mt-1">{productsError.message || 'Đã xảy ra lỗi khi thêm sản phẩm'}</p>
               </div>
             </div>
           </div>
         )}
-        {success && (
+        {productSuccess && (
           <div className="mb-6 p-4 bg-green-50 border-l-4 border-green-500 rounded-lg shadow-md animate-pulse">
             <div className="flex items-start">
               <svg className="h-5 w-5 text-green-500 mr-3 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
@@ -402,12 +399,12 @@ const AddProducts = () => {
             </button>
             <button
               type="submit"
-              disabled={loading}
+              disabled={productsLoading}
               className={`flex-1 flex items-center justify-center px-4 py-3 rounded-lg bg-blue-600 text-white text-sm font-medium shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-200 ${
-                loading ? 'opacity-70 cursor-not-allowed' : ''
+                productsLoading ? 'opacity-70 cursor-not-allowed' : ''
               }`}
             >
-              {loading ? (
+              {productsLoading ? (
                 <>
                   <FaSpinner className="animate-spin mr-2 h-4 w-4" />
                   Đang xử lý...
