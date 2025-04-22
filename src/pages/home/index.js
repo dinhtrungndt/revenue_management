@@ -1,6 +1,22 @@
-import React from 'react'
+import React, { useEffect } from 'react'
+import { useDispatch } from 'react-redux';
+import { fetchAllOrders, fetchExportReport, fetchInventoryReport, fetchProducts, fetchReportDashboard, fetchRevenueReport, fetchUserOrders } from '../../stores/redux/actions/adminActions.js';
 
 const HomePage = () => {
+  const dispatch = useDispatch();
+  const id = localStorage.getItem('pet_food_user');
+  const user = JSON.parse(id);
+
+  useEffect(() => {
+    dispatch(fetchProducts());
+    dispatch(fetchAllOrders());
+    dispatch(fetchUserOrders());
+    dispatch(fetchReportDashboard());
+    dispatch(fetchInventoryReport());
+    dispatch(fetchExportReport());
+    dispatch(fetchRevenueReport());
+  }, [dispatch, user._id]);
+
   return (
     <div className='bg-gray-100 min-h-screen flex items-center justify-center'>
       <div className="bg-white shadow-md rounded-lg p-8 max-w-md mx-auto text-center">Welcome</div>

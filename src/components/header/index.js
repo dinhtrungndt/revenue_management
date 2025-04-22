@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FaBars, FaUser, FaSearch, FaTimes, FaSignOutAlt, FaShoppingBag, FaClipboardList, FaChartLine } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContext';
 import { SideBar } from '../sidebar';
+import { fetchProducts } from '../../stores/redux/actions/adminActions.js';
+import { useDispatch } from 'react-redux';
 
 export const HeaderPage = () => {
+  const dispatch = useDispatch();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchActive, setIsSearchActive] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -73,6 +76,10 @@ export const HeaderPage = () => {
 
     return 'Trang Chủ';
   };
+
+  useEffect(() => {
+    dispatch(fetchProducts());
+  }, [dispatch]);
 
   return (
     <div className="relative">

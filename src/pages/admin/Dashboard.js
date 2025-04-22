@@ -1,25 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { FaBoxes, FaShoppingCart, FaMoneyBillWave, FaChartBar, FaReceipt, FaWarehouse, FaPercent } from 'react-icons/fa';
+import { FaBoxes, FaShoppingCart, FaMoneyBillWave, FaChartBar, FaReceipt, FaWarehouse, FaPercent, FaEyeSlash } from 'react-icons/fa';
 import { MdOutlineProductionQuantityLimits } from 'react-icons/md';
 import { FaMoneyBillTrendUp } from 'react-icons/fa6';
 import { Link } from 'react-router-dom';
-import { fetchReportDashboard, fetchInventoryReport, fetchRevenueReport } from '../../stores/redux/actions/adminActions.js';
-import { ExpenseService } from '../../services/apiService';
+import { fetchReportDashboard, fetchInventoryReport, fetchRevenueReport, fetchExpenseReport, fetchHiddenProducts } from '../../stores/redux/actions/adminActions.js';
 
 const Dashboard = () => {
   const dispatch = useDispatch();
-  const { reports, loading, error } = useSelector((state) => state.adminReducer);
+  const { reports, loading, error, hiddenProducts, hiddenProductsLoading, hiddenProductsError } = useSelector((state) => state.adminReducer);
 
-  const [expenseData, setExpenseData] = useState(null);
-  const [expenseLoading, setExpenseLoading] = useState(false);
   const [dateRange, setDateRange] = useState({
     from: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
-    to: new Date().toISOString().split('T')[0]
+    to: new Date().toISOString().split('T')[0],
   });
   const [profitData, setProfitData] = useState({
     total: 0,
-    recent: 0
+    recent: 0,
   });
 
   // Fetch all report data
@@ -27,53 +24,29 @@ const Dashboard = () => {
     dispatch(fetchReportDashboard());
     dispatch(fetchInventoryReport());
     dispatch(fetchRevenueReport());
-    fetchExpenseData();
-  }, [dispatch]);
+    dispatch(fetchExpenseReport({ from: dateRange.from, to: dateRange.to, groupBy: 'month' }));
+    dispatch(fetchHiddenProducts());
+  }, [dispatch, dateRange]);
 
-  // Calculate profit data whenever reports or expenses change
+  // Calculate profit data whenever reports change
   useEffect(() => {
-    if (reports?.dashboard && expenseData) {
-      // Calculate total profit (revenue - expenses)
-      const totalProfit = (reports.dashboard.revenue?.total || 0) - (expenseData.total?.amount || 0);
-
-      // Calculate recent profit (last 30 days)
+    if (reports?.dashboard && reports?.expense) {
+      const totalProfit = (reports.dashboard.revenue?.total || 0) - (reports.expense.total?.amount || 0);
       const recentProfit = (reports.dashboard.revenue?.recent || 0) -
-        (expenseData.groupedByTime ?
-          Object.values(expenseData.groupedByTime).reduce((sum, item) => {
-            // Check if the date is within last 30 days
+        (reports.expense.groupedByTime ?
+          Object.values(reports.expense.groupedByTime).reduce((sum, item) => {
             const today = new Date();
             const thirtyDaysAgo = new Date();
             thirtyDaysAgo.setDate(today.getDate() - 30);
-
-            // For simplicity, we're using all recent expenses
-            // In a real app, you would filter by date more precisely
             return sum + item.totalAmount;
           }, 0) : 0);
 
       setProfitData({
         total: totalProfit,
-        recent: recentProfit
+        recent: recentProfit,
       });
     }
-  }, [reports?.dashboard, expenseData]);
-
-  // Fetch expense data
-  const fetchExpenseData = async () => {
-    try {
-      setExpenseLoading(true);
-      const params = {
-        from: dateRange.from,
-        to: dateRange.to,
-        groupBy: 'month'
-      };
-      const result = await ExpenseService.getExpenseReport(params);
-      setExpenseData(result);
-    } catch (err) {
-      console.error('Error fetching expense data:', err);
-    } finally {
-      setExpenseLoading(false);
-    }
-  };
+  }, [reports?.dashboard, reports?.expense]);
 
   // Định dạng tiền VND
   const formatCurrency = (amount) => {
@@ -86,7 +59,7 @@ const Dashboard = () => {
     return ((profitData.total / reports.dashboard.revenue.total) * 100).toFixed(1);
   };
 
-  if (loading || expenseLoading) {
+  if (loading || hiddenProductsLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-blue-500">
@@ -99,11 +72,11 @@ const Dashboard = () => {
     );
   }
 
-  if (error) {
+  if (error || hiddenProductsError) {
     return (
       <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert">
         <p className="font-bold">Lỗi</p>
-        <p>{error.message}</p>
+        <p>{error?.message || hiddenProductsError?.message || 'Có lỗi xảy ra'}</p>
       </div>
     );
   }
@@ -113,6 +86,12 @@ const Dashboard = () => {
     revenue: { total: 0, recent: 0 },
     inventory: { totalProducts: 0, totalStock: 0, totalValue: 0 },
     topProducts: [],
+  };
+
+  const expenseData = reports?.expense || {
+    total: { amount: 0 },
+    groupedByCategory: {},
+    groupedByTime: {},
   };
 
   return (
@@ -145,7 +124,7 @@ const Dashboard = () => {
             </div>
             <div className="ml-4">
               <p className="text-xs text-gray-500">Chi phí</p>
-              <p className="text-sm font-medium text-red-600">{formatCurrency(expenseData?.total?.amount || 0)}</p>
+              <p className="text-sm font-medium text-red-600">{formatCurrency(expenseData.total?.amount || 0)}</p>
             </div>
           </div>
         </div>
@@ -222,19 +201,16 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Đơn hàng trung bình */}
+        {/* Sản phẩm ẩn */}
         <div className="bg-white rounded-lg shadow-md p-4">
           <div className="flex items-center">
-            <div className="flex-shrink-0 h-10 w-10 bg-pink-100 text-pink-600 rounded-full flex items-center justify-center">
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
+            <div className="flex-shrink-0 h-10 w-10 bg-red-100 text-red-600 rounded-full flex items-center justify-center">
+              <FaEyeSlash className="h-5 w-5" />
             </div>
             <div className="ml-3">
-              <p className="text-xs text-gray-500">Trung bình đơn</p>
-              <p className="text-sm font-medium text-gray-900">
-                {formatCurrency(dashboard.orders.total > 0 ? dashboard.revenue.total / dashboard.orders.total : 0)}
-              </p>
+              <p className="text-xs text-gray-500">Sản phẩm ẩn</p>
+              <p className="text-sm font-medium text-gray-900">{hiddenProducts?.length || 0}</p>
+              <Link to="/admin/inventory" className="text-xs text-blue-600 hover:underline">Xem chi tiết</Link>
             </div>
           </div>
         </div>
@@ -257,7 +233,6 @@ const Dashboard = () => {
                   <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
                 </svg>
               </Link>
-
               <Link to="/admin/export" className="bg-green-50 p-4 rounded-lg flex items-center justify-between hover:bg-green-100">
                 <div className="flex items-center">
                   <svg className="h-5 w-5 text-green-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -269,7 +244,6 @@ const Dashboard = () => {
                   <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
                 </svg>
               </Link>
-
               <Link to="/admin/revenue" className="bg-yellow-50 p-4 rounded-lg flex items-center justify-between hover:bg-yellow-100">
                 <div className="flex items-center">
                   <FaMoneyBillWave className="h-5 w-5 text-yellow-600 mr-3" />
@@ -279,7 +253,6 @@ const Dashboard = () => {
                   <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
                 </svg>
               </Link>
-
               <Link to="/admin/expense-report" className="bg-red-50 p-4 rounded-lg flex items-center justify-between hover:bg-red-100">
                 <div className="flex items-center">
                   <FaMoneyBillTrendUp className="h-5 w-5 text-red-600 mr-3" />
@@ -289,7 +262,6 @@ const Dashboard = () => {
                   <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
                 </svg>
               </Link>
-
               <Link to="/admin/list-products" className="bg-purple-50 p-4 rounded-lg flex items-center justify-between hover:bg-purple-100">
                 <div className="flex items-center">
                   <MdOutlineProductionQuantityLimits className="h-5 w-5 text-purple-600 mr-3" />
@@ -341,7 +313,7 @@ const Dashboard = () => {
       </div>
 
       {/* Chi phí theo danh mục */}
-      {expenseData && (
+      {expenseData?.groupedByCategory && (
         <div className="bg-white rounded-lg shadow-md mb-8">
           <div className="px-6 py-4 border-b border-gray-200">
             <h2 className="text-lg font-semibold text-gray-800">Chi phí theo danh mục</h2>
@@ -365,7 +337,7 @@ const Dashboard = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {expenseData?.groupedByCategory && Object.entries(expenseData.groupedByCategory).map(([category, data], index) => {
+                {Object.entries(expenseData.groupedByCategory).map(([category, data], index) => {
                   const categoryInfo = [
                     { value: 'utilities', label: 'Tiện ích', color: '#3B82F6' },
                     { value: 'rent', label: 'Thuê mặt bằng', color: '#EF4444' },
@@ -373,10 +345,9 @@ const Dashboard = () => {
                     { value: 'supplies', label: 'Vật tư', color: '#F59E0B' },
                     { value: 'marketing', label: 'Marketing', color: '#8B5CF6' },
                     { value: 'maintenance', label: 'Bảo trì', color: '#EC4899' },
-                    { value: 'others', label: 'Khác', color: '#6B7280' }
-                  ].find(cat => cat.value === category) || { label: category, color: '#6B7280' };
+                    { value: 'others', label: 'Khác', color: '#6B7280' },
+                  ].find((cat) => cat.value === category) || { label: category, color: '#6B7280' };
 
-                  // Tính phần trăm
                   const percentage = expenseData.total.amount > 0
                     ? ((data.totalAmount / expenseData.total.amount) * 100).toFixed(1)
                     : 0;
@@ -385,22 +356,15 @@ const Dashboard = () => {
                     <tr key={index}>
                       <td className="px-3 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div
-                            className="w-3 h-3 rounded-full mr-2"
-                            style={{ backgroundColor: categoryInfo.color }}
-                          ></div>
+                          <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: categoryInfo.color }}></div>
                           <div className="text-sm font-medium text-gray-900">{categoryInfo.label}</div>
                         </div>
                       </td>
-                      <td className="px-3 py-4 whitespace-nowrap text-right text-sm text-gray-500">
-                        {data.count}
-                      </td>
+                      <td className="px-3 py-4 whitespace-nowrap text-right text-sm text-gray-500">{data.count}</td>
                       <td className="px-3 py-4 whitespace-nowrap text-right text-sm font-medium text-gray-900">
                         {formatCurrency(data.totalAmount)}
                       </td>
-                      <td className="px-3 py-4 whitespace-nowrap text-right text-sm text-gray-500">
-                        {percentage}%
-                      </td>
+                      <td className="px-3 py-4 whitespace-nowrap text-right text-sm text-gray-500">{percentage}%</td>
                     </tr>
                   );
                 })}
@@ -419,17 +383,13 @@ const Dashboard = () => {
           <div className="p-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {Object.entries(expenseData.groupedByTime).map(([timeKey, data], index) => {
-                // Định dạng nhãn thời gian
                 let timeLabel = timeKey;
                 if (timeKey.includes('-')) {
                   const [year, month] = timeKey.split('-');
                   timeLabel = `Tháng ${month}/${year}`;
                 }
 
-                // Tìm doanh thu tương ứng (giả định)
-                const revenue = reports?.revenue?.monthly?.find(item => item.month === timeKey)?.amount || 0;
-
-                // Tính lợi nhuận
+                const revenue = reports?.revenue?.monthly?.find((item) => item.month === timeKey)?.amount || 0;
                 const profit = revenue - data.totalAmount;
 
                 return (

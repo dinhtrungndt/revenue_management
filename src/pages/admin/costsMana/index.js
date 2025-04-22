@@ -3,11 +3,21 @@ import {
   FaPlus, FaEdit, FaTrashAlt, FaEyeSlash, FaSearch,
   FaSort, FaFilter, FaFileInvoiceDollar, FaCalendarAlt,
   FaDollarSign, FaSpinner, FaTimes, FaSave, FaUpload, FaTags,
-  FaEye, FaList, FaArchive, FaChevronLeft, FaChevronRight
+  FaEye, FaList, FaArchive, FaChevronLeft, FaChevronRight,
+  FaInfoCircle,
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../../contexts/AuthContext';
-import { ExpenseService } from '../../../services/apiService';
+import { useSelector, useDispatch } from 'react-redux';
+import {
+  fetchExpenses,
+  fetchHiddenExpenses,
+  createExpense,
+  updateExpense,
+  deleteExpense,
+  hideExpense,
+  restoreExpense,
+} from '../../../stores/redux/actions/adminActions.js';
 
 // Danh mục chi phí
 const EXPENSE_CATEGORIES = [
@@ -17,7 +27,7 @@ const EXPENSE_CATEGORIES = [
   { value: 'supplies', label: 'Vật tư' },
   { value: 'marketing', label: 'Marketing' },
   { value: 'maintenance', label: 'Bảo trì' },
-  { value: 'others', label: 'Khác' }
+  { value: 'others', label: 'Khác' },
 ];
 
 // Hàm format ngày tháng
@@ -32,17 +42,22 @@ const formatDateToYYYYMMDD = (date) => {
 
 const CostsMana = () => {
   const { isAuthenticated, user } = useAuth();
+  const dispatch = useDispatch();
+  const {
+    expenses,
+    hiddenExpenses,
+    totalAmount,
+    totalHiddenAmount,
+    expensesLoading,
+    expensesError,
+    hiddenExpensesLoading,
+    hiddenExpensesError,
+  } = useSelector((state) => state.adminReducer);
+
+  console.log('totalAmount:', totalAmount);
 
   // State cho hiển thị danh sách chính/ẩn
   const [viewMode, setViewMode] = useState('active'); // 'active' hoặc 'hidden'
-
-  // State cho danh sách chi phí
-  const [expenses, setExpenses] = useState([]);
-  const [hiddenExpenses, setHiddenExpenses] = useState([]);
-  const [totalAmount, setTotalAmount] = useState(0);
-  const [totalHiddenAmount, setTotalHiddenAmount] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
 
   // State cho form thêm/sửa chi phí
   const [showForm, setShowForm] = useState(false);
@@ -56,10 +71,14 @@ const CostsMana = () => {
     date: formatDateToYYYYMMDD(new Date()),
     isRecurring: false,
     recurringPeriod: 'none',
-    attachments: []
+    attachments: [],
   });
   const [attachmentFiles, setAttachmentFiles] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+
+  // State cho chế độ xem chi tiết
+  const [showDetail, setShowDetail] = useState(false);
+  const [detailExpense, setDetailExpense] = useState(null);
 
   // State cho bộ lọc
   const [filters, setFilters] = useState({
@@ -67,7 +86,7 @@ const CostsMana = () => {
     category: 'all',
     dateFrom: '',
     dateTo: '',
-    isRecurring: ''
+    isRecurring: '',
   });
   const [showFilters, setShowFilters] = useState(false);
 
@@ -76,73 +95,31 @@ const CostsMana = () => {
   const [itemsPerPage] = useState(10);
 
   // Lấy danh sách chi phí
-  const fetchExpenses = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
+  useEffect(() => {
+    if (isAuthenticated && user?.role === 'admin') {
       const params = {};
       if (filters.category !== 'all') params.category = filters.category;
       if (filters.dateFrom) params.from = filters.dateFrom;
       if (filters.dateTo) params.to = filters.dateTo;
       if (filters.isRecurring !== '') params.isRecurring = filters.isRecurring;
+      if (filters.search) params.search = filters.search; // Lọc search phía server
 
-      // Lấy danh sách chi phí hiển thị
-      const activeResult = await ExpenseService.getExpenses(params);
-
-      // Lấy danh sách chi phí đã ẩn
-      const hiddenResult = await ExpenseService.getHiddenExpenses(params);
-
-      // Lọc theo search nếu có
-      let filteredActiveData = activeResult.expenses;
-      let filteredHiddenData = hiddenResult.expenses;
-
-      if (filters.search) {
-        const searchTerm = filters.search.toLowerCase();
-        filteredActiveData = filteredActiveData.filter(expense =>
-          expense.title.toLowerCase().includes(searchTerm) ||
-          (expense.description && expense.description.toLowerCase().includes(searchTerm))
-        );
-
-        filteredHiddenData = filteredHiddenData.filter(expense =>
-          expense.title.toLowerCase().includes(searchTerm) ||
-          (expense.description && expense.description.toLowerCase().includes(searchTerm))
-        );
-      }
-
-      setExpenses(filteredActiveData);
-      setHiddenExpenses(filteredHiddenData);
-      setTotalAmount(activeResult.totalAmount);
-      setTotalHiddenAmount(hiddenResult.totalAmount);
-    } catch (err) {
-      console.error('Error fetching expenses:', err);
-      setError(err.response?.data?.message || 'Không thể tải danh sách chi phí');
-      toast.error('Không thể tải danh sách chi phí');
-    } finally {
-      setLoading(false);
+      dispatch(fetchExpenses(params));
+      dispatch(fetchHiddenExpenses(params));
     }
-  };
-
-  // Gọi API khi component mount hoặc khi filters thay đổi
-  useEffect(() => {
-    if (isAuthenticated && user?.role === 'admin') {
-      fetchExpenses();
-    }
-  }, [isAuthenticated, user, filters.category, filters.dateFrom, filters.dateTo, filters.isRecurring]);
+  }, [isAuthenticated, user, filters, dispatch]);
 
   // Xử lý áp dụng bộ lọc
   const handleApplyFilters = (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
-
     setFilters({
       search: formData.get('search') || '',
       category: formData.get('category') || 'all',
       dateFrom: formData.get('dateFrom') || '',
       dateTo: formData.get('dateTo') || '',
-      isRecurring: formData.get('isRecurring') || ''
+      isRecurring: formData.get('isRecurring') || '',
     });
-
     setCurrentPage(1);
   };
 
@@ -153,7 +130,7 @@ const CostsMana = () => {
       category: 'all',
       dateFrom: '',
       dateTo: '',
-      isRecurring: ''
+      isRecurring: '',
     });
     setCurrentPage(1);
   };
@@ -168,7 +145,7 @@ const CostsMana = () => {
       date: formatDateToYYYYMMDD(new Date()),
       isRecurring: false,
       recurringPeriod: 'none',
-      attachments: []
+      attachments: [],
     });
     setAttachmentFiles([]);
     setFormMode('add');
@@ -176,35 +153,30 @@ const CostsMana = () => {
   };
 
   // Mở form sửa chi phí
-  const handleEditExpense = async (expenseId) => {
-    try {
-      setLoading(true);
-      const expense = await ExpenseService.getExpenseById(expenseId);
-      setSelectedExpense(expense);
-
-      setFormData({
-        title: expense.title,
-        description: expense.description || '',
-        amount: expense.amount.toString(),
-        category: expense.category,
-        date: formatDateToYYYYMMDD(new Date(expense.date)),
-        isRecurring: expense.isRecurring,
-        recurringPeriod: expense.recurringPeriod,
-        attachments: expense.attachments || []
-      });
-
-      setAttachmentFiles([]);
-      setFormMode('edit');
-      setShowForm(true);
-    } catch (err) {
-      console.error('Error fetching expense details:', err);
-      toast.error('Không thể tải thông tin chi phí');
-    } finally {
-      setLoading(false);
-    }
+  const handleEditExpense = async (expense) => {
+    setSelectedExpense(expense);
+    setFormData({
+      title: expense.title,
+      description: expense.description || '',
+      amount: expense.amount.toString(),
+      category: expense.category,
+      date: formatDateToYYYYMMDD(new Date(expense.date)),
+      isRecurring: expense.isRecurring,
+      recurringPeriod: expense.recurringPeriod,
+      attachments: expense.attachments || [],
+    });
+    setAttachmentFiles([]);
+    setFormMode('edit');
+    setShowForm(true);
   };
 
-  // Xử lý đóng form
+  // Mở chi tiết chi phí
+  const handleViewDetail = (expense) => {
+    setDetailExpense(expense);
+    setShowDetail(true);
+  };
+
+  // Đóng form
   const handleCloseForm = () => {
     setShowForm(false);
     setSelectedExpense(null);
@@ -216,48 +188,55 @@ const CostsMana = () => {
       date: formatDateToYYYYMMDD(new Date()),
       isRecurring: false,
       recurringPeriod: 'none',
-      attachments: []
+      attachments: [],
     });
     setAttachmentFiles([]);
+  };
+
+  // Đóng chi tiết
+  const handleCloseDetail = () => {
+    setShowDetail(false);
+    setDetailExpense(null);
   };
 
   // Xử lý thay đổi input form
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === 'checkbox' ? checked : value,
     }));
   };
 
   // Xử lý thêm tệp đính kèm
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
-    setAttachmentFiles(prev => [...prev, ...files]);
+    // Kiểm tra kích thước file (ví dụ: tối đa 5MB)
+    const validFiles = files.filter((file) => file.size <= 5 * 1024 * 1024);
+    if (validFiles.length < files.length) {
+      toast.error('Một số file vượt quá kích thước 5MB');
+    }
+    setAttachmentFiles((prev) => [...prev, ...validFiles]);
   };
 
   // Xử lý xóa tệp đính kèm mới
   const handleRemoveNewFile = (index) => {
-    setAttachmentFiles(prev => prev.filter((_, i) => i !== index));
+    setAttachmentFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   // Xử lý xóa tệp đính kèm đã lưu
   const handleRemoveExistingFile = (url) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      attachments: prev.attachments.filter(fileUrl => fileUrl !== url)
+      attachments: prev.attachments.filter((fileUrl) => fileUrl !== url),
     }));
   };
 
   // Xử lý gửi form
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     try {
       setSubmitting(true);
-      setError(null);
-
-      // Tạo FormData để gửi lên server
       const data = new FormData();
       data.append('title', formData.title);
       data.append('description', formData.description);
@@ -267,37 +246,28 @@ const CostsMana = () => {
       data.append('isRecurring', formData.isRecurring);
       data.append('recurringPeriod', formData.recurringPeriod);
 
-      // Thêm các tệp đính kèm mới
-      attachmentFiles.forEach(file => {
+      attachmentFiles.forEach((file) => {
         data.append('attachments', file);
       });
 
-      // Thêm các tệp đính kèm đã lưu
       if (formMode === 'edit') {
-        formData.attachments.forEach(url => {
+        formData.attachments.forEach((url) => {
           data.append('existingAttachments', url);
         });
       }
 
-      let response;
       if (formMode === 'add') {
-        response = await ExpenseService.createExpense(data);
+        await dispatch(createExpense(data));
         toast.success('Thêm chi phí thành công!');
       } else {
-        response = await ExpenseService.updateExpense(selectedExpense._id, data);
+        await dispatch(updateExpense(selectedExpense._id, data));
         toast.success('Cập nhật chi phí thành công!');
       }
 
-      // Cập nhật danh sách chi phí
-      fetchExpenses();
-
-      // Đóng form
       handleCloseForm();
-
     } catch (err) {
       console.error('Error submitting form:', err);
-      setError(err.response?.data?.message || 'Đã xảy ra lỗi khi lưu chi phí');
-      toast.error('Đã xảy ra lỗi khi lưu chi phí');
+      toast.error(err.response?.data?.message || 'Đã xảy ra lỗi khi lưu chi phí');
     } finally {
       setSubmitting(false);
     }
@@ -306,47 +276,34 @@ const CostsMana = () => {
   // Xử lý xóa chi phí
   const handleDeleteExpense = async (expenseId) => {
     if (!window.confirm('Bạn có chắc chắn muốn xóa chi phí này?')) return;
-
     try {
-      setLoading(true);
-      await ExpenseService.deleteExpense(expenseId);
+      await dispatch(deleteExpense(expenseId));
       toast.success('Xóa chi phí thành công!');
-      fetchExpenses();
     } catch (err) {
       console.error('Error deleting expense:', err);
       toast.error('Không thể xóa chi phí');
-    } finally {
-      setLoading(false);
     }
   };
 
   // Xử lý ẩn chi phí
   const handleHideExpense = async (expenseId) => {
     try {
-      setLoading(true);
-      await ExpenseService.hideExpense(expenseId);
+      await dispatch(hideExpense(expenseId));
       toast.success('Ẩn chi phí thành công!');
-      fetchExpenses();
     } catch (err) {
       console.error('Error hiding expense:', err);
       toast.error('Không thể ẩn chi phí');
-    } finally {
-      setLoading(false);
     }
   };
 
-  // Xử lý khôi phục chi phí đã ẩn
+  // Xử lý khôi phục chi phí
   const handleRestoreExpense = async (expenseId) => {
     try {
-      setLoading(true);
-      await ExpenseService.restoreExpense(expenseId);
+      await dispatch(restoreExpense(expenseId));
       toast.success('Khôi phục chi phí thành công!');
-      fetchExpenses();
     } catch (err) {
       console.error('Error restoring expense:', err);
       toast.error('Không thể khôi phục chi phí');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -361,9 +318,9 @@ const CostsMana = () => {
     return date.toLocaleDateString('vi-VN');
   };
 
-  // Lấy nhãn danh mục từ giá trị
+  // Lấy nhãn danh mục
   const getCategoryLabel = (value) => {
-    const category = EXPENSE_CATEGORIES.find(cat => cat.value === value);
+    const category = EXPENSE_CATEGORIES.find((cat) => cat.value === value);
     return category ? category.label : value;
   };
 
@@ -379,7 +336,7 @@ const CostsMana = () => {
   // Chuyển trang
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
-  // Chuyển đổi giữa danh sách hiển thị và ẩn
+  // Chuyển đổi chế độ xem
   const toggleViewMode = (mode) => {
     setViewMode(mode);
     setCurrentPage(1);
@@ -398,9 +355,7 @@ const CostsMana = () => {
           <button
             onClick={() => toggleViewMode('active')}
             className={`flex-1 px-3 sm:px-4 py-2 text-sm font-medium flex items-center justify-center ${
-              viewMode === 'active'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-100'
+              viewMode === 'active' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'
             }`}
           >
             <FaList className="mr-1 sm:mr-2" />
@@ -409,9 +364,7 @@ const CostsMana = () => {
           <button
             onClick={() => toggleViewMode('hidden')}
             className={`flex-1 px-3 sm:px-4 py-2 text-sm font-medium flex items-center justify-center ${
-              viewMode === 'hidden'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-100'
+              viewMode === 'hidden' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'
             }`}
           >
             <FaArchive className="mr-1 sm:mr-2" />
@@ -430,8 +383,9 @@ const CostsMana = () => {
           </button>
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`px-4 py-2 rounded-lg flex items-center justify-center ${showFilters ? 'bg-gray-200 text-gray-700' : 'bg-gray-100 text-gray-600'
-              }`}
+            className={`px-4 py-2 rounded-lg flex items-center justify-center ${
+              showFilters ? 'bg-gray-200 text-gray-700' : 'bg-gray-100 text-gray-600'
+            }`}
           >
             <FaFilter className="mr-1" />
             {showFilters ? 'Ẩn bộ lọc' : 'Hiện bộ lọc'}
@@ -457,6 +411,14 @@ const CostsMana = () => {
           </div>
         </div>
       </div>
+
+      {/* Lỗi */}
+      {(expensesError || hiddenExpensesError) && (
+        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert">
+          <p className="font-bold">Lỗi</p>
+          <p>{expensesError?.message || hiddenExpensesError?.message}</p>
+        </div>
+      )}
 
       {/* Bộ lọc */}
       {showFilters && (
@@ -487,7 +449,7 @@ const CostsMana = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="all">Tất cả danh mục</option>
-                  {EXPENSE_CATEGORIES.map(cat => (
+                  {EXPENSE_CATEGORIES.map((cat) => (
                     <option key={cat.value} value={cat.value}>{cat.label}</option>
                   ))}
                 </select>
@@ -532,231 +494,38 @@ const CostsMana = () => {
         </div>
       )}
 
-      {/* Danh sách chi phí - Desktop */}
-      <div className="bg-white rounded-lg shadow overflow-hidden hidden sm:block">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Tiêu đề
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Danh mục
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Ngày
-                </th>
-                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Số tiền
-                </th>
-                <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Định kỳ
-                </th>
-                <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Thao tác
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {loading ? (
-                <tr>
-                  <td colSpan="6" className="px-6 py-4 text-center">
-                    <FaSpinner className="inline-block animate-spin text-blue-600 text-xl" />
-                    <span className="ml-2">Đang tải...</span>
-                  </td>
-                </tr>
-              ) : currentItems.length === 0 ? (
-                <tr>
-                  <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
-                    {viewMode === 'active'
-                      ? 'Không có dữ liệu chi phí hiển thị'
-                      : 'Không có dữ liệu chi phí đã ẩn'}
-                  </td>
-                </tr>
-              ) : (
-                currentItems.map((expense) => (
-                  <tr key={expense._id} className="hover:bg-gray-50 cursor-pointer" onClick={() => handleEditExpense(expense._id)}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{expense.title}</div>
-                      {expense.description && (
-                        <div className="text-xs text-gray-500 truncate max-w-xs">{expense.description}</div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                        {getCategoryLabel(expense.category)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatDate(expense.date)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-red-600">
-                      {formatCurrency(expense.amount)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
-                      {expense.isRecurring ? (
-                        <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                          {expense.recurringPeriod === 'daily' && 'Hàng ngày'}
-                          {expense.recurringPeriod === 'weekly' && 'Hàng tuần'}
-                          {expense.recurringPeriod === 'monthly' && 'Hàng tháng'}
-                          {expense.recurringPeriod === 'yearly' && 'Hàng năm'}
-                        </span>
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
-                      <div className="flex items-center justify-center space-x-2" onClick={(e) => e.stopPropagation()}>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEditExpense(expense._id);
-                          }}
-                          className="text-indigo-600 hover:text-indigo-900"
-                          title="Chỉnh sửa"
-                        >
-                          <FaEdit />
-                        </button>
-
-                        {viewMode === 'active' ? (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleHideExpense(expense._id);
-                            }}
-                            className="text-yellow-600 hover:text-yellow-900"
-                            title="Ẩn"
-                          >
-                            <FaEyeSlash />
-                          </button>
-                        ) : (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRestoreExpense(expense._id);
-                            }}
-                            className="text-green-600 hover:text-green-900"
-                            title="Khôi phục"
-                          >
-                            <FaEye />
-                          </button>
-                        )}
-
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteExpense(expense._id);
-                          }}
-                          className="text-red-600 hover:text-red-900"
-                          title="Xóa"
-                        >
-                          <FaTrashAlt />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Phân trang - Desktop */}
-        {!loading && totalPages > 1 && (
-          <div className="px-6 py-3 flex items-center justify-between border-t border-gray-200">
-            <div>
-              <p className="text-sm text-gray-700">
-                Hiển thị <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> đến <span className="font-medium">
-                  {Math.min(currentPage * itemsPerPage, (viewMode === 'active' ? expenses.length : hiddenExpenses.length))}
-                </span> trong tổng số <span className="font-medium">{viewMode === 'active' ? expenses.length : hiddenExpenses.length}</span> chi phí
-              </p>
-            </div>
-            <div>
-              <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                <button
-                  onClick={() => paginate(Math.max(1, currentPage - 1))}
-                  disabled={currentPage === 1}
-                  className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium ${currentPage === 1
-                      ? 'text-gray-300 cursor-not-allowed'
-                      : 'text-gray-500 hover:bg-gray-50'
-                    }`}
-                >
-                  <span className="sr-only">Trang trước</span>
-                  <FaChevronLeft className="h-4 w-4" />
-                </button>
-                {[...Array(totalPages).keys()].map(number => (
-                  <button
-                    key={number + 1}
-                    onClick={() => paginate(number + 1)}
-                    className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${currentPage === number + 1
-                        ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                        : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                      }`}
-                  >
-                    {number + 1}
-                  </button>
-                ))}
-                <button
-                  onClick={() => paginate(Math.min(totalPages, currentPage + 1))}
-                  disabled={currentPage === totalPages}
-                  className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium ${currentPage === totalPages
-                      ? 'text-gray-300 cursor-not-allowed'
-                      : 'text-gray-500 hover:bg-gray-50'
-                    }`}
-                >
-                  <span className="sr-only">Trang sau</span>
-                  <FaChevronRight className="h-4 w-4" />
-                </button>
-              </nav>
-            </div>
-          </div>
-        )}
-      </div>
-
       {/* Danh sách chi phí - Mobile */}
       <div className="bg-white rounded-lg shadow overflow-hidden sm:hidden">
-        {loading ? (
+        {(expensesLoading || hiddenExpensesLoading) ? (
           <div className="p-4 text-center">
             <FaSpinner className="inline-block animate-spin text-blue-600 text-xl" />
             <span className="ml-2">Đang tải...</span>
           </div>
         ) : currentItems.length === 0 ? (
           <div className="p-4 text-center text-gray-500">
-            {viewMode === 'active'
-              ? 'Không có dữ liệu chi phí hiển thị'
-              : 'Không có dữ liệu chi phí đã ẩn'}
+            {viewMode === 'active' ? 'Không có dữ liệu chi phí hiển thị' : 'Không có dữ liệu chi phí đã ẩn'}
           </div>
         ) : (
           <div className="divide-y divide-gray-200">
             {currentItems.map((expense) => (
-              <div
-                key={expense._id}
-                className="p-4 hover:bg-gray-50"
-                onClick={() => handleEditExpense(expense._id)}
-              >
+              <div key={expense._id} className="p-4 hover:bg-gray-50">
                 <div className="flex justify-between items-start mb-1">
-                  <div className="font-medium text-gray-900">{expense.title}</div>
-                  <div className="text-right font-medium text-red-600">
-                    {formatCurrency(expense.amount)}
+                  <div className="font-medium text-gray-900 cursor-pointer" onClick={() => handleViewDetail(expense)}>
+                    {expense.title}
                   </div>
+                  <div className="text-right font-medium text-red-600">{formatCurrency(expense.amount)}</div>
                 </div>
-
                 <div className="flex justify-between items-center mb-1 text-sm">
                   <div>
                     <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
                       {getCategoryLabel(expense.category)}
                     </span>
                   </div>
-                  <div className="text-gray-500">
-                    {formatDate(expense.date)}
-                  </div>
+                  <div className="text-gray-500">{formatDate(expense.date)}</div>
                 </div>
-
                 {expense.description && (
                   <div className="text-xs text-gray-500 mt-1 mb-2">{expense.description}</div>
                 )}
-
                 <div className="flex justify-between items-center mt-2">
                   <div>
                     {expense.isRecurring && (
@@ -768,25 +537,31 @@ const CostsMana = () => {
                       </span>
                     )}
                   </div>
-
-                  {/* <div className="flex space-x-3" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleEditExpense(expense._id);
-                      }}
+                  <button
+                      onClick={() => handleViewDetail(expense)}
+                      className="text-blue-600"
+                      aria-label="Xem chi tiết"
+                    >
+                      <FaInfoCircle size={16} />
+                    </button>
+                  <div className="flex space-x-3">
+                    {/* <button
+                      onClick={() => handleViewDetail(expense)}
+                      className="text-blue-600"
+                      aria-label="Xem chi tiết"
+                    >
+                      <FaInfoCircle size={16} />
+                    </button> */}
+                    {/* <button
+                      onClick={() => handleEditExpense(expense)}
                       className="text-indigo-600"
                       aria-label="Chỉnh sửa"
                     >
                       <FaEdit size={16} />
-                    </button>
-
-                    {viewMode === 'active' ? (
+                    </button> */}
+                    {/* {viewMode === 'active' ? (
                       <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleHideExpense(expense._id);
-                        }}
+                        onClick={() => handleHideExpense(expense._id)}
                         className="text-yellow-600"
                         aria-label="Ẩn"
                       >
@@ -794,60 +569,52 @@ const CostsMana = () => {
                       </button>
                     ) : (
                       <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRestoreExpense(expense._id);
-                        }}
+                        onClick={() => handleRestoreExpense(expense._id)}
                         className="text-green-600"
                         aria-label="Khôi phục"
                       >
                         <FaEye size={16} />
                       </button>
-                    )}
-
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteExpense(expense._id);
-                      }}
+                    )} */}
+                    {/* <button
+                      onClick={() => handleDeleteExpense(expense._id)}
                       className="text-red-600"
                       aria-label="Xóa"
                     >
                       <FaTrashAlt size={16} />
-                    </button>
-                  </div> */}
+                    </button> */}
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         )}
-
         {/* Phân trang - Mobile */}
-        {!loading && totalPages > 1 && (
+        {!(expensesLoading || hiddenExpensesLoading) && totalPages > 1 && (
           <div className="p-4 flex justify-between items-center border-t border-gray-200">
             <button
               onClick={() => paginate(Math.max(1, currentPage - 1))}
               disabled={currentPage === 1}
-              className={`flex items-center px-3 py-1 rounded border ${currentPage === 1
+              className={`flex items-center px-3 py-1 rounded border ${
+                currentPage === 1
                   ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
                   : 'bg-white text-gray-700 border-gray-300'
-                }`}
+              }`}
             >
               <FaChevronLeft className="h-3 w-3 mr-1" />
               <span>Trước</span>
             </button>
-
             <span className="text-sm text-gray-700">
               {currentPage} / {totalPages}
             </span>
-
             <button
               onClick={() => paginate(Math.min(totalPages, currentPage + 1))}
               disabled={currentPage === totalPages}
-              className={`flex items-center px-3 py-1 rounded border ${currentPage === totalPages
+              className={`flex items-center px-3 py-1 rounded border ${
+                currentPage === totalPages
                   ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
                   : 'bg-white text-gray-700 border-gray-300'
-                }`}
+              }`}
             >
               <span>Sau</span>
               <FaChevronRight className="h-3 w-3 ml-1" />
@@ -856,13 +623,13 @@ const CostsMana = () => {
         )}
       </div>
 
+      {/* Form thêm/sửa chi phí */}
       {showForm && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center">
             <div className="fixed inset-0 transition-opacity" aria-hidden="true">
               <div className="absolute inset-0 bg-gray-500 opacity-75" onClick={handleCloseForm}></div>
             </div>
-
             <div className="bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:max-w-lg sm:w-full">
               <form onSubmit={handleSubmit}>
                 <div className="bg-blue-600 px-4 py-3 sm:px-6">
@@ -870,19 +637,13 @@ const CostsMana = () => {
                     <h3 className="text-lg leading-6 font-medium text-white">
                       {formMode === 'add' ? 'Thêm chi phí mới' : 'Chỉnh sửa chi phí'}
                     </h3>
-                    <button
-                      type="button"
-                      className="text-white hover:text-gray-200"
-                      onClick={handleCloseForm}
-                    >
+                    <button type="button" className="text-white hover:text-gray-200" onClick={handleCloseForm}>
                       <FaTimes />
                     </button>
                   </div>
                 </div>
-
                 <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                   <div className="space-y-4">
-                    {/* Tiêu đề và Số tiền */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
@@ -914,6 +675,7 @@ const CostsMana = () => {
                             onChange={handleInputChange}
                             className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                             min="0"
+                            step="1000"
                             required
                           />
                         </div>
@@ -924,8 +686,6 @@ const CostsMana = () => {
                         )}
                       </div>
                     </div>
-
-                    {/* Danh mục và Ngày */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
@@ -943,7 +703,7 @@ const CostsMana = () => {
                             className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                             required
                           >
-                            {EXPENSE_CATEGORIES.map(cat => (
+                            {EXPENSE_CATEGORIES.map((cat) => (
                               <option key={cat.value} value={cat.value}>{cat.label}</option>
                             ))}
                           </select>
@@ -969,8 +729,6 @@ const CostsMana = () => {
                         </div>
                       </div>
                     </div>
-
-                    {/* Chi phí định kỳ */}
                     <div>
                       <div className="flex items-center">
                         <input
@@ -985,7 +743,6 @@ const CostsMana = () => {
                           Đây là chi phí định kỳ
                         </label>
                       </div>
-
                       {formData.isRecurring && (
                         <div className="mt-2">
                           <label htmlFor="recurringPeriod" className="block text-sm font-medium text-gray-700 mb-1">
@@ -1007,8 +764,6 @@ const CostsMana = () => {
                         </div>
                       )}
                     </div>
-
-                    {/* Mô tả */}
                     <div>
                       <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
                         Mô tả
@@ -1022,15 +777,9 @@ const CostsMana = () => {
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       ></textarea>
                     </div>
-
-                    {/* Tệp đính kèm */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Tệp đính kèm
-                      </label>
-
-                      {/* Hiển thị tệp đính kèm hiện có */}
-                      {formData.attachments && formData.attachments.length > 0 && (
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Tệp đính kèm</label>
+                      {formData.attachments?.length > 0 && (
                         <div className="mb-2 space-y-1">
                           {formData.attachments.map((url, index) => (
                             <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
@@ -1053,8 +802,6 @@ const CostsMana = () => {
                           ))}
                         </div>
                       )}
-
-                      {/* Hiển thị tệp mới được chọn */}
                       {attachmentFiles.length > 0 && (
                         <div className="mb-2 space-y-1">
                           {attachmentFiles.map((file, index) => (
@@ -1071,10 +818,10 @@ const CostsMana = () => {
                           ))}
                         </div>
                       )}
-
-                      {/* Input để chọn tệp */}
-                      <div className="flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-4 cursor-pointer hover:border-blue-500"
-                        onClick={() => document.getElementById('attachments').click()}>
+                      <div
+                        className="flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-4 cursor-pointer hover:border-blue-500"
+                        onClick={() => document.getElementById('attachments').click()}
+                      >
                         <input
                           type="file"
                           id="attachments"
@@ -1085,18 +832,13 @@ const CostsMana = () => {
                         />
                         <div className="text-center">
                           <FaUpload className="mx-auto h-8 w-8 text-gray-400" />
-                          <p className="mt-1 text-sm text-gray-500">
-                            Nhấp để chọn hoặc kéo thả tệp vào đây
-                          </p>
-                          <p className="text-xs text-gray-400">
-                            Chấp nhận các định dạng JPG, PNG, PDF (tối đa 5MB)
-                          </p>
+                          <p className="mt-1 text-sm text-gray-500">Nhấp để chọn hoặc kéo thả tệp vào đây</p>
+                          <p className="text-xs text-gray-400">Chấp nhận các định dạng JPG, PNG, PDF (tối đa 5MB)</p>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
-
                 <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
                   <button
                     type="submit"
@@ -1129,6 +871,105 @@ const CostsMana = () => {
         </div>
       )}
 
+      {/* Chi tiết chi phí */}
+      {showDetail && detailExpense && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center">
+            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+              <div className="absolute inset-0 bg-gray-500 opacity-75" onClick={handleCloseDetail}></div>
+            </div>
+            <div className="bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:max-w-lg sm:w-full">
+              <div className="bg-blue-600 px-4 py-3 sm:px-6">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg leading-6 font-medium text-white">Chi tiết chi phí</h3>
+                  <button type="button" className="text-white hover:text-gray-200" onClick={handleCloseDetail}>
+                    <FaTimes />
+                  </button>
+                </div>
+              </div>
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Tiêu đề</label>
+                    <p className="text-gray-900">{detailExpense.title}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Số tiền</label>
+                    <p className="text-red-600">{formatCurrency(detailExpense.amount)}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Danh mục</label>
+                    <p className="text-gray-900">{getCategoryLabel(detailExpense.category)}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Ngày</label>
+                    <p className="text-gray-900">{formatDate(detailExpense.date)}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Định kỳ</label>
+                    <p className="text-gray-900">
+                      {detailExpense.isRecurring ? (
+                        <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                          {detailExpense.recurringPeriod === 'daily' && 'Hàng ngày'}
+                          {detailExpense.recurringPeriod === 'weekly' && 'Hàng tuần'}
+                          {detailExpense.recurringPeriod === 'monthly' && 'Hàng tháng'}
+                          {detailExpense.recurringPeriod === 'yearly' && 'Hàng năm'}
+                        </span>
+                      ) : (
+                        'Không định kỳ'
+                      )}
+                    </p>
+                  </div>
+                  {detailExpense.description && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Mô tả</label>
+                      <p className="text-gray-900">{detailExpense.description}</p>
+                    </div>
+                  )}
+                  {detailExpense.attachments?.length > 0 && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Tệp đính kèm</label>
+                      <div className="space-y-1">
+                        {detailExpense.attachments.map((url, index) => (
+                          <div key={index} className="flex items-center bg-gray-50 p-2 rounded">
+                            <a
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:underline text-sm truncate"
+                            >
+                              {url.split('/').pop()}
+                            </a>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button
+                  onClick={() => {
+                    handleCloseDetail();
+                    handleEditExpense(detailExpense);
+                  }}
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
+                >
+                  <FaEdit className="mr-2" />
+                  Chỉnh sửa
+                </button>
+                <button
+                  type="button"
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:w-auto sm:text-sm"
+                  onClick={handleCloseDetail}
+                >
+                  Đóng
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

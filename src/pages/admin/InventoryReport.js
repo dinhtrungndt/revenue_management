@@ -1,67 +1,47 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { FaSearch, FaExclamationTriangle, FaBoxOpen, FaEye, FaEyeSlash, FaSpinner } from 'react-icons/fa';
-import { fetchInventoryReport } from '../../stores/redux/actions/adminActions.js';
-import { ProductService } from '../../services/apiService';
+import { fetchInventoryReport, fetchHiddenProducts, fetchRestoreProducts } from '../../stores/redux/actions/adminActions.js';
 import { toast } from 'react-toastify';
 
 const InventoryReport = () => {
   const dispatch = useDispatch();
-  const { reports, loading, error } = useSelector((state) => state.adminReducer);
+  const {
+    reports,
+    loading,
+    error,
+    hiddenProducts,
+    hiddenProductsLoading,
+    hiddenProductsError,
+    restoringProductId
+  } = useSelector((state) => state.adminReducer);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
   const [showHiddenProducts, setShowHiddenProducts] = useState(false);
-  const [hiddenProducts, setHiddenProducts] = useState([]);
-  const [isLoadingHidden, setIsLoadingHidden] = useState(false);
-  const [isRestoring, setIsRestoring] = useState(null);
 
   useEffect(() => {
     // Fetch active products
     dispatch(fetchInventoryReport({
       category: filterCategory !== 'all' ? filterCategory : undefined,
-      isActive: true // Chỉ lấy sản phẩm active
+      isActive: true
     }));
   }, [dispatch, filterCategory]);
 
-  // Fetch hidden products when toggle is on
   useEffect(() => {
     if (showHiddenProducts) {
-      fetchHiddenProducts();
+      dispatch(fetchHiddenProducts());
     }
-  }, [showHiddenProducts]);
+  }, [dispatch, showHiddenProducts]);
 
-  const fetchHiddenProducts = async () => {
-    try {
-      setIsLoadingHidden(true);
-      const response = await ProductService.getHiddenProducts();
-      setHiddenProducts(response || []);
-    } catch (error) {
-      console.error('Error fetching hidden products:', error);
-      toast.error('Không thể tải sản phẩm đã ẩn');
-    } finally {
-      setIsLoadingHidden(false);
-    }
-  };
-
-  const handleRestoreProduct = async (productId) => {
-    try {
-      setIsRestoring(productId);
-      await ProductService.restoreProduct(productId);
-
-      // Refresh data
-      fetchHiddenProducts();
-      dispatch(fetchInventoryReport({ category: filterCategory !== 'all' ? filterCategory : undefined }));
-
+  const handleRestoreProduct = (productId) => {
+    dispatch(fetchRestoreProducts(productId)).then(() => {
       toast.success('Đã khôi phục sản phẩm thành công');
-    } catch (error) {
-      console.error('Error restoring product:', error);
+    }).catch(() => {
       toast.error('Không thể khôi phục sản phẩm');
-    } finally {
-      setIsRestoring(null);
-    }
+    });
   };
 
-  const inventoryReport = reports.inventory || {
+  const inventoryReport = reports?.inventory || {
     products: [],
     summary: {
       totalProducts: 0,
@@ -72,18 +52,15 @@ const InventoryReport = () => {
     categoryStats: {},
   };
 
-  // Lọc sản phẩm theo từ khóa tìm kiếm và đảm bảo chỉ hiển thị sản phẩm KHÔNG bị ẩn
   const filteredProducts = inventoryReport.products.filter((product) =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
-    product.isActive !== false // Chỉ lấy sản phẩm active
+    product.isActive !== false
   );
 
-  // Lọc sản phẩm đã ẩn theo từ khóa tìm kiếm
-  const filteredHiddenProducts = hiddenProducts.filter((product) =>
+  const filteredHiddenProducts = (hiddenProducts || []).filter((product) =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Định dạng tiền VND
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
   };
@@ -101,11 +78,11 @@ const InventoryReport = () => {
     );
   }
 
-  if (error) {
+  if (error || hiddenProductsError) {
     return (
       <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert">
         <p className="font-bold">Lỗi</p>
-        <p>{error.message}</p>
+        <p>{error?.message || hiddenProductsError?.message || 'Có lỗi xảy ra'}</p>
       </div>
     );
   }
@@ -124,7 +101,6 @@ const InventoryReport = () => {
             </div>
           </div>
         </div>
-
         <div className="bg-white p-4 rounded-lg shadow">
           <div className="flex items-center">
             <div className="bg-green-100 p-3 rounded-full mr-3">
@@ -138,7 +114,6 @@ const InventoryReport = () => {
             </div>
           </div>
         </div>
-
         <div className="bg-white p-4 rounded-lg shadow">
           <div className="flex items-center">
             <div className="bg-yellow-100 p-3 rounded-full mr-3">
@@ -150,7 +125,6 @@ const InventoryReport = () => {
             </div>
           </div>
         </div>
-
         <div className="bg-white p-4 rounded-lg shadow">
           <div className="flex items-center">
             <div className="bg-red-100 p-3 rounded-full mr-3">
@@ -217,7 +191,6 @@ const InventoryReport = () => {
       <div className="bg-white rounded-lg shadow-md">
         <div className="p-4 border-b border-gray-200 flex justify-between items-center flex-wrap gap-2">
           <h2 className="text-lg font-semibold">Danh sách sản phẩm tồn kho</h2>
-
           <div className="flex flex-wrap space-x-2 items-center">
             <div className="relative">
               <input
@@ -231,7 +204,6 @@ const InventoryReport = () => {
                 <FaSearch className="text-gray-400" />
               </div>
             </div>
-
             <select
               className="border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={filterCategory}
@@ -241,8 +213,6 @@ const InventoryReport = () => {
               <option value="dog">Chó</option>
               <option value="cat">Mèo</option>
             </select>
-
-            {/* Toggle button to show hidden products */}
             <button
               onClick={() => setShowHiddenProducts(!showHiddenProducts)}
               className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium ${
@@ -258,10 +228,9 @@ const InventoryReport = () => {
         </div>
 
         <div className="p-4">
-          {/* Mobile view - card style */}
           <div className="block md:hidden">
             {showHiddenProducts ? (
-              isLoadingHidden ? (
+              hiddenProductsLoading ? (
                 <div className="flex justify-center items-center py-6">
                   <FaSpinner className="animate-spin text-blue-600 h-6 w-6" />
                   <span className="ml-2 text-gray-600">Đang tải...</span>
@@ -294,10 +263,10 @@ const InventoryReport = () => {
                         </div>
                         <button
                           onClick={() => handleRestoreProduct(product._id)}
-                          disabled={isRestoring === product._id}
+                          disabled={restoringProductId === product._id}
                           className="h-8 w-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center hover:bg-green-200"
                         >
-                          {isRestoring === product._id ? (
+                          {restoringProductId === product._id ? (
                             <FaSpinner className="animate-spin h-4 w-4" />
                           ) : (
                             <FaEye className="h-4 w-4" />
@@ -354,7 +323,6 @@ const InventoryReport = () => {
             )}
           </div>
 
-          {/* Desktop view - table */}
           <div className="hidden md:block overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -386,7 +354,7 @@ const InventoryReport = () => {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {showHiddenProducts ? (
-                  isLoadingHidden ? (
+                  hiddenProductsLoading ? (
                     <tr>
                       <td colSpan="7" className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                         <div className="flex justify-center items-center">
@@ -429,10 +397,10 @@ const InventoryReport = () => {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <button
                             onClick={() => handleRestoreProduct(product._id)}
-                            disabled={isRestoring === product._id}
+                            disabled={restoringProductId === product._id}
                             className="text-green-600 hover:text-green-900 flex items-center"
                           >
-                            {isRestoring === product._id ? (
+                            {restoringProductId === product._id ? (
                               <FaSpinner className="animate-spin h-5 w-5 mr-1" />
                             ) : (
                               <FaEye className="h-5 w-5 mr-1" />

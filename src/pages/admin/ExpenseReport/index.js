@@ -11,7 +11,8 @@ import {
   getLastDayOfMonth
 } from '../../../utils/dateUtils';
 import { useAuth } from '../../../contexts/AuthContext';
-import { ExpenseService } from '../../../services/apiService';
+import { useSelector, useDispatch } from 'react-redux';
+import { fetchExpenseReport } from '../../../stores/redux/actions/adminActions.js';
 
 const EXPENSE_CATEGORIES = [
   { value: 'utilities', label: 'Tiện ích', color: '#3B82F6' }, // blue-500
@@ -25,6 +26,9 @@ const EXPENSE_CATEGORIES = [
 
 const ExpenseReport = () => {
   const { isAuthenticated, user } = useAuth();
+  const dispatch = useDispatch();
+  const { reports, expensesLoading, expensesError } = useSelector((state) => state.adminReducer);
+  const reportData = reports?.expense;
 
   // State cho bộ lọc báo cáo
   const [filters, setFilters] = useState({
@@ -33,44 +37,22 @@ const ExpenseReport = () => {
     groupBy: 'month'
   });
 
-  // State cho dữ liệu báo cáo
-  const [reportData, setReportData] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  // Lấy dữ liệu báo cáo
-  const fetchReportData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
+  // Gọi API khi component mount hoặc filters thay đổi
+  useEffect(() => {
+    if (isAuthenticated && user?.role === 'admin') {
       const params = {
         from: filters.from,
         to: filters.to,
         groupBy: filters.groupBy
       };
-
-      const result = await ExpenseService.getExpenseReport(params);
-      setReportData(result);
-    } catch (err) {
-      console.error('Error fetching expense report:', err);
-      setError(err.response?.data?.message || 'Không thể tải báo cáo chi phí');
-    } finally {
-      setLoading(false);
+      dispatch(fetchExpenseReport(params));
     }
-  };
-
-  // Gọi API khi component mount hoặc filters thay đổi
-  useEffect(() => {
-    if (isAuthenticated && user?.role === 'admin') {
-      fetchReportData();
-    }
-  }, [isAuthenticated, user, filters.from, filters.to, filters.groupBy]);
+  }, [isAuthenticated, user, filters.from, filters.to, filters.groupBy, dispatch]);
 
   // Xử lý thay đổi bộ lọc
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
       [name]: value
     }));
@@ -189,7 +171,7 @@ const ExpenseReport = () => {
       </div>
 
       {/* Hiển thị loading */}
-      {loading && (
+      {expensesLoading && (
         <div className="flex justify-center items-center py-10">
           <FaSpinner className="animate-spin text-blue-600 h-10 w-10" />
           <span className="ml-3 text-blue-600 font-medium">Đang tải báo cáo...</span>
@@ -197,7 +179,7 @@ const ExpenseReport = () => {
       )}
 
       {/* Hiển thị lỗi */}
-      {error && (
+      {expensesError && (
         <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
           <div className="flex">
             <div className="flex-shrink-0">
@@ -207,14 +189,14 @@ const ExpenseReport = () => {
             </div>
             <div className="ml-3">
               <h3 className="text-sm font-medium text-red-800">Đã xảy ra lỗi</h3>
-              <p className="text-sm text-red-700 mt-1">{error}</p>
+              <p className="text-sm text-red-700 mt-1">{expensesError.message || 'Không thể tải báo cáo chi phí'}</p>
             </div>
           </div>
         </div>
       )}
 
       {/* Nội dung báo cáo */}
-      {!loading && !error && reportData && (
+      {!expensesLoading && !expensesError && reportData && (
         <>
           {/* Tổng quan */}
           <div className="bg-white rounded-lg shadow p-6 mb-6">
@@ -227,21 +209,21 @@ const ExpenseReport = () => {
               <div className="bg-blue-50 rounded-lg p-4">
                 <div className="text-blue-600 text-sm font-medium">Tổng chi phí</div>
                 <div className="text-gray-800 text-2xl font-bold mt-1">
-                  {formatCurrency(reportData.total.amount)}
+                  {formatCurrency(reportData.total?.amount || 0)}
                 </div>
               </div>
 
               <div className="bg-green-50 rounded-lg p-4">
                 <div className="text-green-600 text-sm font-medium">Số lượng giao dịch</div>
                 <div className="text-gray-800 text-2xl font-bold mt-1">
-                  {reportData.total.count}
+                  {reportData.total?.count || 0}
                 </div>
               </div>
 
               <div className="bg-purple-50 rounded-lg p-4">
                 <div className="text-purple-600 text-sm font-medium">Chi phí trung bình</div>
                 <div className="text-gray-800 text-2xl font-bold mt-1">
-                  {formatCurrency(reportData.total.count > 0 ? reportData.total.amount / reportData.total.count : 0)}
+                  {formatCurrency(reportData.total?.count > 0 ? reportData.total.amount / reportData.total.count : 0)}
                 </div>
               </div>
             </div>
@@ -351,7 +333,6 @@ const ExpenseReport = () => {
                 </tbody>
               </table>
             </div>
-
           </div>
         </>
       )}

@@ -1,4 +1,4 @@
-import { ProductService, OrderService, InventoryService, ReportService } from '../../../services/apiService';
+import { ProductService, OrderService, InventoryService, ReportService, ExpenseService } from '../../../services/apiService';
 import {
     FETCH_PRODUCTS,
     FETCH_PRODUCTS_ERROR,
@@ -34,31 +34,45 @@ import {
     FETCH_EXPORT_REPORT_ERROR,
     FETCH_REVENUE_REPORT,
     FETCH_REVENUE_REPORT_ERROR,
+    FETCH_EXPENSES,
+    FETCH_EXPENSES_ERROR,
+    FETCH_PRODUCTS_HIDDEN,
+    RESTORE_PRODUCT,
+    FETCH_EXPENSES_SUCCESS,
+    FETCH_HIDDEN_EXPENSES,
+    FETCH_HIDDEN_EXPENSES_SUCCESS,
+    FETCH_HIDDEN_EXPENSES_ERROR,
+    CREATE_EXPENSE,
+    UPDATE_EXPENSE,
+    DELETE_EXPENSE,
+    HIDE_EXPENSE,
+    RESTORE_EXPENSE,
+    CREATE_PRODUCT_SUCCESS,
 } from './types';
+
+// Action để đặt trạng thái khôi phục
+export const setRestoringProduct = (id) => ({
+    type: 'SET_RESTORING_PRODUCT',
+    payload: id,
+});
 
 // Product Actions
 export const fetchProducts = (params = {}) => {
     return async (dispatch) => {
         try {
-            // Tạo một object mới cho tham số API
             const apiParams = { ...params };
-
-            // Lưu lại thông tin sắp xếp để sử dụng sau
             const sortOption = params.sortOption;
-
-            // Xử lý tham số sortOption đặc biệt
             if (params.sortOption) {
                 const [field, order] = params.sortOption.split('_');
                 apiParams.sort = field;
                 apiParams.order = order;
                 delete apiParams.sortOption;
             }
-
             const data = await ProductService.getAllProducts(apiParams);
             dispatch({
                 type: FETCH_PRODUCTS,
                 payload: data,
-                meta: { sortOption } // Truyền thông tin sắp xếp vào action
+                meta: { sortOption }
             });
         } catch (error) {
             console.error('Error fetching products:', error);
@@ -88,24 +102,69 @@ export const fetchProductById = (id) => {
     };
 };
 
-export const createProduct = (productData) => {
+export const fetchHiddenProducts = () => {
     return async (dispatch) => {
         try {
-            const data = await ProductService.createProduct(productData);
             dispatch({
-                type: CREATE_PRODUCT,
+                type: FETCH_PRODUCTS_HIDDEN,
+                payload: [],
+                meta: { loading: true }
+            });
+            const data = await ProductService.getHiddenProducts();
+            dispatch({
+                type: FETCH_PRODUCTS_HIDDEN,
                 payload: data,
             });
         } catch (error) {
-            console.error('Error creating product:', error);
+            console.error('Error fetching hidden products:', error);
             dispatch({
-                type: CREATE_PRODUCT_ERROR,
-                payload: error.response?.data || { message: 'Lỗi khi tạo sản phẩm mới' },
+                type: FETCH_PRODUCTS_ERROR,
+                payload: error.response?.data || { message: 'Lỗi khi lấy sản phẩm ẩn' },
             });
         }
     };
 };
 
+export const fetchRestoreProducts = (id) => {
+    return async (dispatch) => {
+        try {
+            dispatch(setRestoringProduct(id));
+            const data = await ProductService.restoreProduct(id);
+            dispatch({
+                type: RESTORE_PRODUCT,
+                payload: data,
+            });
+        } catch (error) {
+            console.error(`Error restoring product ${id}:`, error);
+            dispatch({
+                type: FETCH_PRODUCTS_ERROR,
+                payload: error.response?.data || { message: 'Lỗi khi khôi phục sản phẩm' },
+            });
+        } finally {
+            dispatch(setRestoringProduct(null));
+        }
+    };
+};
+
+export const createProduct = (productData) => {
+    return async (dispatch) => {
+      try {
+        dispatch({ type: CREATE_PRODUCT });
+        const data = await ProductService.createProduct(productData);
+        dispatch({
+          type: CREATE_PRODUCT_SUCCESS,
+          payload: data,
+        });
+        dispatch(fetchProducts());
+      } catch (error) {
+        console.error('Error creating product:', error);
+        dispatch({
+          type: CREATE_PRODUCT_ERROR,
+          payload: error.response?.data || { message: 'Lỗi khi thêm sản phẩm' },
+        });
+      }
+    };
+  };
 export const updateProduct = (id, productData) => {
     return async (dispatch) => {
         try {
@@ -360,3 +419,148 @@ export const fetchRevenueReport = (params = {}) => {
         }
     };
 };
+
+// Expense Actions
+export const fetchExpenses = (params = {}) => async (dispatch) => {
+    try {
+        dispatch({ type: FETCH_EXPENSES, meta: { loading: true } });
+        const data = await ExpenseService.getExpenses(params);
+        dispatch({
+            type: FETCH_EXPENSES_SUCCESS,
+            payload: data,
+        });
+    } catch (error) {
+        console.error('Error fetching expenses:', error);
+        dispatch({
+            type: FETCH_EXPENSES_ERROR,
+            payload: error.response?.data || { message: 'Lỗi khi lấy danh sách chi phí' },
+        });
+    }
+};
+
+// Fetch hidden expenses
+export const fetchHiddenExpenses = (params = {}) => async (dispatch) => {
+    try {
+        dispatch({ type: FETCH_HIDDEN_EXPENSES, meta: { loading: true } });
+        const data = await ExpenseService.getHiddenExpenses(params);
+        dispatch({
+            type: FETCH_HIDDEN_EXPENSES_SUCCESS,
+            payload: data,
+        });
+    } catch (error) {
+        console.error('Error fetching hidden expenses:', error);
+        dispatch({
+            type: FETCH_HIDDEN_EXPENSES_ERROR,
+            payload: error.response?.data || { message: 'Lỗi khi lấy danh sách chi phí ẩn' },
+        });
+    }
+};
+
+// Create expense
+export const createExpense = (expenseData) => async (dispatch) => {
+    try {
+        const data = await ExpenseService.createExpense(expenseData);
+        dispatch({
+            type: CREATE_EXPENSE,
+            payload: data,
+        });
+        // Đồng bộ báo cáo chi phí
+        dispatch(fetchExpenseReport());
+        return data;
+    } catch (error) {
+        console.error('Error creating expense:', error);
+        throw error.response?.data || { message: 'Lỗi khi tạo chi phí mới' };
+    }
+};
+
+// Update expense
+export const updateExpense = (id, expenseData) => async (dispatch) => {
+    try {
+        const data = await ExpenseService.updateExpense(id, expenseData);
+        dispatch({
+            type: UPDATE_EXPENSE,
+            payload: { id, data },
+        });
+        // Đồng bộ báo cáo chi phí
+        dispatch(fetchExpenseReport());
+        return data;
+    } catch (error) {
+        console.error(`Error updating expense ${id}:`, error);
+        throw error.response?.data || { message: 'Lỗi khi cập nhật chi phí' };
+    }
+};
+
+// Delete expense
+export const deleteExpense = (id) => async (dispatch) => {
+    try {
+        await ExpenseService.deleteExpense(id);
+        dispatch({
+            type: DELETE_EXPENSE,
+            payload: id,
+        });
+        // Đồng bộ báo cáo chi phí
+        dispatch(fetchExpenseReport());
+    } catch (error) {
+        console.error(`Error deleting expense ${id}:`, error);
+        throw error.response?.data || { message: 'Lỗi khi xóa chi phí' };
+    }
+};
+
+// Hide expense
+export const hideExpense = (id) => async (dispatch) => {
+    try {
+        await ExpenseService.hideExpense(id);
+        dispatch({
+            type: HIDE_EXPENSE,
+            payload: id,
+        });
+        // Đồng bộ báo cáo chi phí
+        dispatch(fetchExpenseReport());
+    } catch (error) {
+        console.error(`Error hiding expense ${id}:`, error);
+        throw error.response?.data || { message: 'Lỗi khi ẩn chi phí' };
+    }
+};
+
+// Restore expense
+export const restoreExpense = (id) => async (dispatch) => {
+    try {
+        await ExpenseService.restoreExpense(id);
+        dispatch({
+            type: RESTORE_EXPENSE,
+            payload: id,
+        });
+        // Đồng bộ báo cáo chi phí
+        dispatch(fetchExpenseReport());
+    } catch (error) {
+        console.error(`Error restoring expense ${id}:`, error);
+        throw error.response?.data || { message: 'Lỗi khi khôi phục chi phí' };
+    }
+};
+
+// Fetch expense report (hiện có, giữ nguyên)
+export const fetchExpenseReport = (params = {}) => {
+    return async (dispatch) => {
+      try {
+        dispatch({
+          type: FETCH_EXPENSES,
+          payload: null,
+          meta: { loading: true },
+        });
+        const data = await ExpenseService.getExpenseReport(params);
+        dispatch({
+          type: FETCH_EXPENSES,
+          payload: {
+            ...data,
+            totalAmount: data.byMonth?.reduce((sum, month) => sum + month.amount, 0) || 0,
+          },
+        });
+      } catch (error) {
+        console.error('Error fetching expense report:', error);
+        dispatch({
+          type: FETCH_EXPENSES_ERROR,
+          payload: error.response?.data || { message: 'Lỗi khi lấy báo cáo chi phí' },
+        });
+      }
+    };
+  };

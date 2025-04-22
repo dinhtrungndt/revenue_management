@@ -33,11 +33,31 @@ import {
     ADJUST_STOCK_ERROR,
     FETCH_INVENTORY_TRANSACTIONS,
     FETCH_INVENTORY_TRANSACTIONS_ERROR,
+    FETCH_EXPENSES,
+    FETCH_EXPENSES_SUCCESS,
+    FETCH_EXPENSES_ERROR,
+    FETCH_HIDDEN_EXPENSES,
+    FETCH_HIDDEN_EXPENSES_SUCCESS,
+    FETCH_HIDDEN_EXPENSES_ERROR,
+    CREATE_EXPENSE,
+    UPDATE_EXPENSE,
+    DELETE_EXPENSE,
+    HIDE_EXPENSE,
+    RESTORE_EXPENSE,
+    FETCH_PRODUCTS_HIDDEN,
+    RESTORE_PRODUCT,
 } from '../actions/types';
 
 const initialState = {
     products: [],
     product: null,
+    productsLoading: false,
+    productsError: null,
+    productSuccess: false,
+    hiddenProducts: [],
+    hiddenProductsLoading: false,
+    hiddenProductsError: null,
+    restoringProductId: null,
     orders: [],
     order: null,
     inventory: [],
@@ -47,7 +67,16 @@ const initialState = {
         inventory: null,
         export: null,
         revenue: null,
+        expense: null,
     },
+    expenses: [],
+    hiddenExpenses: [],
+    totalAmount: 0,
+    totalHiddenAmount: 0,
+    expensesLoading: false,
+    expensesError: null,
+    hiddenExpensesLoading: false,
+    hiddenExpensesError: null,
     loading: false,
     error: null,
 };
@@ -57,11 +86,8 @@ const adminReducer = (state = initialState, action) => {
         // Product Cases
         case FETCH_PRODUCTS:
             let sortedProducts = [...action.payload];
-
-            // Lấy thông tin sắp xếp từ action nếu có
             if (action.meta && action.meta.sortOption) {
                 const [field, order] = action.meta.sortOption.split('_');
-
                 sortedProducts.sort((a, b) => {
                     if (order === 'asc') {
                         return a[field] > b[field] ? 1 : -1;
@@ -70,7 +96,6 @@ const adminReducer = (state = initialState, action) => {
                     }
                 });
             }
-
             return {
                 ...state,
                 products: sortedProducts,
@@ -89,6 +114,30 @@ const adminReducer = (state = initialState, action) => {
                 product: action.payload,
                 loading: false,
                 error: null,
+            };
+        case FETCH_PRODUCTS_HIDDEN:
+            return {
+                ...state,
+                hiddenProducts: action.payload,
+                hiddenProductsLoading: false,
+                hiddenProductsError: null,
+            };
+        case RESTORE_PRODUCT:
+            return {
+                ...state,
+                hiddenProducts: state.hiddenProducts.filter(
+                    (product) => product._id !== action.payload._id
+                ),
+                products: state.products.map((product) =>
+                    product._id === action.payload._id ? { ...product, isHidden: false } : product
+                ),
+                loading: false,
+                error: null,
+            };
+        case 'SET_RESTORING_PRODUCT':
+            return {
+                ...state,
+                restoringProductId: action.payload,
             };
         case FETCH_PRODUCT_BY_ID_ERROR:
             return {
@@ -312,6 +361,105 @@ const adminReducer = (state = initialState, action) => {
                 ...state,
                 loading: false,
                 error: action.payload,
+            };
+
+        // Expense Cases
+        case FETCH_EXPENSES:
+            return {
+                ...state,
+                reports: {
+                    ...state.reports,
+                    expense: {
+                        ...action.payload,
+                        totalAmount: action.payload?.total?.amount || 0,
+                    },
+                },
+                loading: action.meta?.loading || false,
+                error: null,
+            };
+        case FETCH_EXPENSES_SUCCESS:
+            return {
+                ...state,
+                expenses: action.payload.expenses,
+                totalAmount: action.payload.expenses.reduce((sum, exp) => sum + exp.amount, 0),
+                expensesLoading: false,
+                expensesError: null,
+            };
+        case FETCH_EXPENSES_ERROR:
+            return {
+                ...state,
+                expensesLoading: false,
+                expensesError: action.payload,
+            };
+        case FETCH_HIDDEN_EXPENSES:
+            return {
+                ...state,
+                hiddenExpensesLoading: true,
+                hiddenExpensesError: null,
+            };
+        case FETCH_HIDDEN_EXPENSES_SUCCESS:
+            return {
+                ...state,
+                hiddenExpenses: action.payload.expenses,
+                totalHiddenAmount: action.payload.expenses.reduce((sum, exp) => sum + exp.amount, 0),
+                hiddenExpensesLoading: false,
+                hiddenExpensesError: null,
+            };
+        case FETCH_HIDDEN_EXPENSES_ERROR:
+            return {
+                ...state,
+                hiddenExpensesLoading: false,
+                hiddenExpensesError: action.payload,
+            };
+        case CREATE_EXPENSE:
+            return {
+                ...state,
+                expenses: [...state.expenses, action.payload],
+                totalAmount: state.totalAmount + action.payload.amount,
+                expensesLoading: false,
+                expensesError: null,
+            };
+        case UPDATE_EXPENSE:
+            return {
+                ...state,
+                expenses: state.expenses.map((expense) =>
+                    expense._id === action.payload.id ? action.payload.data : expense
+                ),
+                hiddenExpenses: state.hiddenExpenses.map((expense) =>
+                    expense._id === action.payload.id ? action.payload.data : expense
+                ),
+                expensesLoading: false,
+                expensesError: null,
+            };
+        case DELETE_EXPENSE:
+            return {
+                ...state,
+                expenses: state.expenses.filter((expense) => expense._id !== action.payload),
+                hiddenExpenses: state.hiddenExpenses.filter((expense) => expense._id !== action.payload),
+                expensesLoading: false,
+                expensesError: null,
+            };
+        case HIDE_EXPENSE:
+            const expenseToHide = state.expenses.find((expense) => expense._id === action.payload);
+            return {
+                ...state,
+                expenses: state.expenses.filter((expense) => expense._id !== action.payload),
+                hiddenExpenses: expenseToHide ? [...state.hiddenExpenses, { ...expenseToHide, isHidden: true }] : state.hiddenExpenses,
+                totalAmount: state.totalAmount - (expenseToHide?.amount || 0),
+                totalHiddenAmount: state.totalHiddenAmount + (expenseToHide?.amount || 0),
+                expensesLoading: false,
+                expensesError: null,
+            };
+        case RESTORE_EXPENSE:
+            const expenseToRestore = state.hiddenExpenses.find((expense) => expense._id === action.payload);
+            return {
+                ...state,
+                hiddenExpenses: state.hiddenExpenses.filter((expense) => expense._id !== action.payload),
+                expenses: expenseToRestore ? [...state.expenses, { ...expenseToRestore, isHidden: false }] : state.expenses,
+                totalHiddenAmount: state.totalHiddenAmount - (expenseToRestore?.amount || 0),
+                totalAmount: state.totalAmount + (expenseToRestore?.amount || 0),
+                expensesLoading: false,
+                expensesError: null,
             };
         default:
             return state;
