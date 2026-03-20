@@ -21,11 +21,23 @@ The system features strict Role-Based Access Control (RBAC), ensuring that Admin
 
 🎥 System Previews & Demos
 
-Check out the real-time interactions of the dashboard through our short demos:
+Check out the real-time interactions of the dashboard through our short demos (Click the images to watch on YouTube):
 
-👑 Admin Interface Demo: Watch on YouTube
+<div align="center">
+<a href="https://youtube.com/shorts/hRWvRD5KMfM?feature=share">
+<img src="https://www.google.com/search?q=https://img.youtube.com/vi/hRWvRD5KMfM/0.jpg" alt="Admin Interface Demo" width="30%" />
+</a>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="https://youtube.com/shorts/N-4t2ms-p-E?feature=share">
+<img src="https://www.google.com/search?q=https://img.youtube.com/vi/N-4t2ms-p-E/0.jpg" alt="Staff Interface Demo" width="30%" />
+</a>
 
-👨‍💼 Staff Interface Demo: Watch on YouTube
+
+
+
+
+<i>Left: 👑 Admin Interface | Right: 👨‍💼 Staff Interface</i>
+</div>
 
 ✨ Key Features
 
